@@ -1,0 +1,6 @@
+transformers==4.51.3
+tqdm==4.67.1
+PyMuPDF==1.25.5
+accelerate==1.6.0
+unsloth==2025.4.7
+gradio==5.29.0

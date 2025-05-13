@@ -1,4 +1,3 @@
-
 # PDF Summarization using Fine-Tuned Mistral-7B (Unsloth)
 
 This project summarizes lengthy PDF documents using a fine-tuned [Mistral-7B](https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3) model with Unsloth for efficient inference on long inputs.
@@ -12,6 +11,27 @@ This project summarizes lengthy PDF documents using a fine-tuned [Mistral-7B](ht
 - User-friendly Gradio interface for interaction.
 
 ## 📁 Project Structure
+
+```your_project/
+project_name/
+│
+├── input_pdfs/                  # Directory for storing input PDF files
+│
+├── output_image/                # Directory for storing output images
+│
+├── .gitignore                   # Git ignore file for excluding unnecessary files from version control
+│
+├── main.ipynb                   # Main Jupyter notebook for Model testing and gradio interface
+│
+├── mistral_fine_tuning_unsloth.ipynb  # Jupyter notebook for fine-tuning the Mistral model
+│
+├── README.md                    # Project documentation (explanation of project, setup, and usage)
+│
+├── requirements.txt             # List of Python dependencies required for the project
+│
+├── thumbnail.webp             # thumbnail for linkedin video profile
+
+```
 
 ## 🧠 Model Used
 

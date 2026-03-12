@@ -1,0 +1,2 @@
+STRICT: don't create any file with more than 200 lines of code
+STRICT: don't modify dockerfile without asking for permission

@@ -1,21 +1,35 @@
+"use client";
+
+import { Theme } from "@/lib/constants";
 import Link from "next/link";
 
-export default function CTASection() {
+export default function CTASection({ T, dark }: { T: Theme; dark: boolean }) {
     return (
-        <section className="mx-[64px] mb-[120px]">
-            <div className="py-[80px] px-[64px] text-center bg-gradient-to-br from-[#00e5ff]/5 to-[#f0a500]/5 border border-white/10 rounded-sm backdrop-blur-[20px]">
-                <div className="font-space-mono text-[10px] text-[#00e5ff] tracking-[0.24em] mb-[24px]">
+        <section style={{ margin: "0 64px 100px" }}>
+            <div style={{
+                padding: "72px 60px", textAlign: "center",
+                background: dark ? "#1c1a15" : "#1a1714",
+                border: dark ? `1px solid ${T.border}` : "none",
+                borderRadius: "4px",
+                transition: "background .35s, border-color .35s",
+            }}>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold, letterSpacing: ".22em", marginBottom: "20px" }}>
                     — GET STARTED
                 </div>
-                <h2 className="font-syne font-extrabold text-[clamp(36px,6vw,78px)] leading-[0.92] tracking-[-0.025em] mb-[24px]">
+                <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(30px,5vw,62px)", lineHeight: .95, letterSpacing: "-.025em", color: dark ? "#f0ece4" : "#f5f3ef", marginBottom: "20px" }}>
                     Drop your PDF.<br />
-                    <span className="text-[#00e5ff]">Get a summary.</span>
+                    <span style={{ color: T.gold }}>Get a summary.</span>
                 </h2>
-                <p className="text-white/50 text-[15px] max-w-[380px] mx-auto mb-[44px] leading-[1.72] font-light">
-                    Powered by a fine-tuned Mistral 7B model, hosted free on Hugging Face Spaces. No sign-up required.
+                <p style={{ color: dark ? "rgba(240,236,228,0.35)" : "rgba(245,243,239,0.45)", fontSize: "14px", maxWidth: "340px", margin: "0 auto 36px", lineHeight: 1.75, fontWeight: 300 }}>
+                    Fine-tuned Mistral 7B on Hugging Face Spaces. Free to use. No sign-up required.
                 </p>
                 <Link href="/summarize">
-                    <button className="btn-cta px-[52px] py-[16px] text-[13px]">LAUNCH SUMMARIZER →</button>
+                    <button className="btn-primary" style={{ background: T.gold, color: "#fff", padding: "14px 48px", fontSize: "12px" }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = ".85"}
+                        onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+                    >
+                        LAUNCH SUMMARIZER →
+                    </button>
                 </Link>
             </div>
         </section>

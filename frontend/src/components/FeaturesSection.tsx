@@ -1,32 +1,41 @@
-import { C } from "@/lib/constants";
+"use client";
 
-export default function FeaturesSection() {
+import { Theme } from "@/lib/constants";
+
+export default function FeaturesSection({ T }: { T: Theme }) {
     const features = [
-        { sym: "◈", title: "Smart PDF Parsing", body: "PyMuPDF extracts raw text from any PDF — research papers, reports, textbooks. Chunked intelligently at 1500 tokens for optimal model inference.", accent: C.cyan },
-        { sym: "⬡", title: "Live Token Streaming", body: "Watch your summary appear in real-time via SSE. Every token the model produces is pushed immediately to your screen — no waiting for the full response.", accent: C.gold },
-        { sym: "◎", title: "History & Archive", body: "Every summarization job persisted in Neon PostgreSQL. Revisit past summaries, inspect chunk-level breakdowns, and track processing status.", accent: C.cyan },
+        { sym: "◈", title: "Smart PDF Parsing", body: "PyMuPDF extracts all text and splits it into intelligent 1500-token chunks — ready for the model to digest one piece at a time." },
+        { sym: "⬡", title: "Live Token Streaming", body: "Summaries appear word-by-word in real time via Server-Sent Events. No spinner, no waiting — just instant output as the model generates." },
+        { sym: "◎", title: "Full Job History", body: "Every upload persisted in PostgreSQL. Revisit any past summary, inspect chunk-level breakdowns, and track job status at a glance." },
     ];
 
     return (
-        <section className="px-[64px] pt-[80px] pb-[100px]">
-            <div className="mb-[64px]">
-                <div className="font-space-mono text-[10px] text-[#00e5ff] tracking-[0.24em] mb-[16px]">
+        <section style={{ padding: "60px 64px 100px" }}>
+            <div style={{ marginBottom: "52px" }}>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold, letterSpacing: ".22em", marginBottom: "14px" }}>
                     — CAPABILITIES
                 </div>
-                <h2 className="font-syne font-extrabold text-[clamp(32px,5vw,62px)] leading-[1.05] tracking-[-0.02em]">
+                <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(28px,4vw,52px)", letterSpacing: "-.02em", lineHeight: 1.05, color: T.ink, transition: "color .35s" }}>
                     What it does.
                 </h2>
             </div>
-            <div className="grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-[1px] bg-white/10">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: "16px" }}>
                 {features.map(f => (
-                    <div key={f.title} className="feat-card">
-                        <div className="feat-icon text-[26px] mb-[28px]" style={{ color: f.accent }}>
+                    <div key={f.title} className="feat-card" style={{
+                        padding: "36px 32px", background: T.surface,
+                        border: `1px solid ${T.border}`, borderRadius: "4px",
+                        transition: "background .35s, border-color .35s, transform .3s, box-shadow .3s",
+                    }}
+                        onMouseEnter={e => e.currentTarget.style.boxShadow = T.cardHover}
+                        onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}
+                    >
+                        <div style={{ fontSize: "22px", color: T.gold, marginBottom: "20px" }}>
                             {f.sym}
                         </div>
-                        <h3 className="font-syne font-bold text-[18px] mb-[14px] tracking-[-0.01em]">
+                        <h3 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "17px", marginBottom: "12px", letterSpacing: "-.01em", color: T.ink, transition: "color .35s" }}>
                             {f.title}
                         </h3>
-                        <p className="text-white/50 leading-[1.72] text-[14px] font-light">
+                        <p style={{ color: T.muted, lineHeight: 1.75, fontSize: "14px", fontWeight: 300, transition: "color .35s" }}>
                             {f.body}
                         </p>
                     </div>

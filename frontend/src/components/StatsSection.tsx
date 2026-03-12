@@ -1,20 +1,29 @@
-export default function StatsSection() {
+"use client";
+
+import { Theme } from "@/lib/constants";
+
+export default function StatsSection({ T }: { T: Theme }) {
     const stats = [
         { v: "7B", l: "Parameters" },
-        { v: "4-bit", l: "Quantized" },
+        { v: "4bit", l: "Quantized" },
         { v: "200", l: "Fine-tune Steps" },
-        { v: "SSE", l: "Real-time Stream" },
+        { v: "SSE", l: "Live Stream" },
     ];
 
     return (
-        <div className="px-[64px] pb-[100px]">
-            <div className="grid grid-cols-4 gap-[1px] bg-white/10 border border-white/10 max-w-[860px]">
-                {stats.map(s => (
-                    <div key={s.l} className="stat-cell">
-                        <div className="sv font-syne font-extrabold text-[clamp(26px,3.5vw,40px)] text-[#f0f0f0] mb-[6px]">
+        <div style={{ padding: "0 64px 100px" }}>
+            <div style={{
+                display: "grid", gridTemplateColumns: "repeat(4,1fr)",
+                border: `1px solid ${T.border}`, background: T.surface,
+                borderRadius: "4px", overflow: "hidden", maxWidth: "800px",
+                transition: "background .35s, border-color .35s",
+            }}>
+                {stats.map((s, i) => (
+                    <div key={s.l} className="stat-item" style={{ padding: "28px 20px", textAlign: "center", borderRight: i < 3 ? `1px solid ${T.border}` : "none", transition: "border-color .35s" }}>
+                        <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(22px,3vw,36px)", color: T.ink, marginBottom: "5px", transition: "color .35s" }}>
                             {s.v}
                         </div>
-                        <div className="font-space-mono text-[10px] text-white/50 tracking-[0.14em]">
+                        <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".12em", transition: "color .35s" }}>
                             {s.l}
                         </div>
                     </div>

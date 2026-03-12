@@ -1,407 +1,314 @@
-import { useEffect, useRef } from "react";
-import * as THREE from "three";
+"use client";
+import { useEffect, useState } from "react";
 
-const C = {
-  bg: "#070709",
-  cyan: "#00e5ff",
-  gold: "#f0a500",
-  white: "#f0f0f0",
-  muted: "rgba(240,240,240,0.48)",
-  surface: "rgba(255,255,255,0.04)",
-  border: "rgba(255,255,255,0.08)",
+const LIGHT = {
+  bg:       "#f5f3ef",
+  surface:  "#ffffff",
+  ink:      "#1a1714",
+  muted:    "#8a857e",
+  border:   "#e8e4de",
+  gold:     "#c8861a",
+  navBg:    "rgba(245,243,239,0.88)",
+  ctaBg:    "#1a1714",
+  ctaText:  "#f5f3ef",
+  ctaMuted: "rgba(245,243,239,0.45)",
+  ring1:    "rgba(200,134,26,0.12)",
+  ring2:    "rgba(200,134,26,0.18)",
+  ring3:    "rgba(26,23,20,0.06)",
+  glow:     "rgba(200,134,26,0.08)",
+  scrollBg: "#c8c4bc",
+  cardHover:"0 12px 40px rgba(0,0,0,0.07)",
+};
+
+const DARK = {
+  bg:       "#111009",
+  surface:  "#1c1a15",
+  ink:      "#f0ece4",
+  muted:    "#7a7468",
+  border:   "#2a2720",
+  gold:     "#e09b2a",
+  navBg:    "rgba(17,16,9,0.88)",
+  ctaBg:    "#1c1a15",
+  ctaText:  "#f0ece4",
+  ctaMuted: "rgba(240,236,228,0.35)",
+  ring1:    "rgba(224,155,42,0.1)",
+  ring2:    "rgba(224,155,42,0.15)",
+  ring3:    "rgba(240,236,228,0.04)",
+  glow:     "rgba(224,155,42,0.06)",
+  scrollBg: "#3a3628",
+  cardHover:"0 12px 40px rgba(0,0,0,0.4)",
 };
 
 export default function BotZCoderLanding() {
-  const canvasRef = useRef(null);
+  const [mouse, setMouse] = useState({ x: 0, y: 0 });
+  const [dark, setDark] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const T = dark ? DARK : LIGHT;
+
+  const toggle = () => {
+    setToggling(true);
+    setTimeout(() => { setDark(d => !d); setToggling(false); }, 180);
+  };
 
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400&display=swap";
+    link.href = "https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400&display=swap";
     document.head.appendChild(link);
 
     const style = document.createElement("style");
-    style.id = "bz-styles";
+    style.id = "bz3";
     style.textContent = `
-      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body { background: #070709 !important; overflow-x: hidden; }
-      ::-webkit-scrollbar { width: 3px; }
-      ::-webkit-scrollbar-track { background: #070709; }
-      ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.3); }
-
-      @keyframes fadeUp {
-        from { opacity: 0; transform: translateY(28px); }
-        to { opacity: 1; transform: translateY(0); }
+      *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+      html { scroll-behavior:smooth; }
+      ::-webkit-scrollbar { width:3px; }
+      @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+      @keyframes spin-slow { to{transform:rotate(360deg)} }
+      @keyframes float-y { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+      @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+      @keyframes theme-fade { from{opacity:0} to{opacity:1} }
+      .fi1{animation:fadeUp .7s ease .05s forwards;opacity:0}
+      .fi2{animation:fadeUp .7s ease .18s forwards;opacity:0}
+      .fi3{animation:fadeUp .7s ease .30s forwards;opacity:0}
+      .fi4{animation:fadeUp .7s ease .42s forwards;opacity:0}
+      .fi5{animation:fadeUp .7s ease .54s forwards;opacity:0}
+      .theme-fade { animation: theme-fade .2s ease forwards; }
+      .feat-card { transition:all .3s ease; cursor:default; }
+      .feat-card:hover { transform:translateY(-4px); }
+      .step-item { transition:all .2s ease; cursor:default; }
+      .step-item:hover .step-label-inner { opacity:0.55; }
+      .stat-item { cursor:default; }
+      .nav-link { text-decoration:none; font-family:'Space Mono',monospace; font-size:10px; letter-spacing:.12em; transition:color .2s; }
+      .theme-btn {
+        display:flex; align-items:center; justify-content:center;
+        width:36px; height:36px; border-radius:50%;
+        cursor:pointer; border:1px solid; transition:all .25s ease;
+        font-size:15px; background:transparent; flex-shrink:0;
       }
-      @keyframes pulse-dot {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.35; transform: scale(0.75); }
-      }
-      @keyframes aurora-drift {
-        0% { transform: scale(1); opacity: 0.65; }
-        100% { transform: scale(1.14) rotate(4deg); opacity: 1; }
-      }
-
-      .fi1 { animation: fadeUp 0.9s ease 0.1s forwards; opacity: 0; }
-      .fi2 { animation: fadeUp 0.9s ease 0.3s forwards; opacity: 0; }
-      .fi3 { animation: fadeUp 0.9s ease 0.5s forwards; opacity: 0; }
-      .fi4 { animation: fadeUp 0.9s ease 0.7s forwards; opacity: 0; }
-      .fi5 { animation: fadeUp 0.9s ease 0.9s forwards; opacity: 0; }
-
-      .btn-cta {
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 14px 36px; background: transparent;
-        border: 1px solid #00e5ff; color: #00e5ff;
-        font-family: 'Space Mono', monospace; font-size: 12px;
-        letter-spacing: 0.13em; cursor: pointer; border-radius: 3px;
-        transition: all 0.3s ease;
-      }
-      .btn-cta:hover {
-        background: #00e5ff; color: #000;
-        transform: translateY(-2px);
-        box-shadow: 0 0 44px rgba(0,229,255,0.45);
-      }
-      .btn-ghost {
-        display: inline-flex; align-items: center; gap: 8px;
-        padding: 14px 36px; background: transparent;
-        border: 1px solid rgba(255,255,255,0.12);
-        color: rgba(240,240,240,0.45);
-        font-family: 'Space Mono', monospace; font-size: 12px;
-        letter-spacing: 0.13em; cursor: pointer; border-radius: 3px;
-        transition: all 0.3s ease;
-      }
-      .btn-ghost:hover { border-color: rgba(255,255,255,0.5); color: #f0f0f0; transform: translateY(-2px); }
-
-      .feat-card {
-        padding: 48px 40px; background: rgba(255,255,255,0.04);
-        border-bottom: 1px solid rgba(255,255,255,0.07);
-        transition: all 0.35s ease; cursor: default;
-      }
-      .feat-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-4px); }
-      .feat-card:hover .feat-icon { transform: scale(1.15) rotate(12deg); }
-      .feat-icon { transition: transform 0.3s ease; display: inline-block; }
-
-      .step-row {
-        display: flex; align-items: center; gap: 40px;
-        padding: 36px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
-        transition: all 0.25s ease; cursor: default;
-      }
-      .step-row:last-child { border-bottom: none; }
-      .step-row:hover .step-n { color: #00e5ff !important; }
-      .step-row:hover .step-arrow { border-color: rgba(0,229,255,0.5) !important; color: #00e5ff !important; }
-      .step-n { transition: color 0.25s; }
-      .step-arrow { transition: all 0.25s; }
-
-      .stat-cell {
-        padding: 32px 24px; background: #070709;
-        text-align: center; cursor: default; transition: all 0.3s;
-      }
-      .stat-cell:hover .sv { color: #00e5ff !important; }
-      .sv { transition: color 0.3s; }
-
-      .nav-link {
-        color: rgba(240,240,240,0.42); text-decoration: none;
-        font-family: 'Space Mono', monospace; font-size: 11px;
-        letter-spacing: 0.1em; transition: color 0.2s;
-      }
-      .nav-link:hover { color: #f0f0f0; }
-
-      .nav-try {
-        padding: 7px 18px;
-        border: 1px solid rgba(0,229,255,0.45); border-radius: 3px;
-        color: #00e5ff; font-size: 11px;
-        font-family: 'Space Mono', monospace; cursor: pointer;
-        letter-spacing: 0.1em; background: transparent;
-        transition: background 0.2s;
-      }
-      .nav-try:hover { background: rgba(0,229,255,0.1); }
+      .theme-btn:hover { transform:rotate(18deg) scale(1.08); }
+      .btn-primary { display:inline-flex; align-items:center; gap:8px; padding:12px 30px; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.12em; cursor:pointer; border:none; border-radius:2px; transition:all .25s ease; }
+      .btn-primary:hover { transform:translateY(-2px); }
+      .btn-outline { display:inline-flex; align-items:center; gap:8px; padding:12px 30px; background:transparent; font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.12em; cursor:pointer; border-radius:2px; transition:all .25s ease; }
+      .btn-outline:hover { transform:translateY(-2px); }
     `;
     document.head.appendChild(style);
+    const onMove = e => setMouse({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
+    window.addEventListener("mousemove", onMove);
     return () => {
       if (document.head.contains(link)) document.head.removeChild(link);
-      const s = document.getElementById("bz-styles");
-      if (s && document.head.contains(s)) document.head.removeChild(s);
-    };
-  }, []);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const scene = new THREE.Scene();
-    let w = window.innerWidth, h = window.innerHeight;
-    const cam = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
-    cam.position.z = 6.5;
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setSize(w, h);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-    const defs = [
-      { G: new THREE.IcosahedronGeometry(2.0, 0), color: 0x00e5ff, op: 0.28, p: [1.2, 0.3, -1.5], rs: [0.003, 0.005, 0.002] },
-      { G: new THREE.OctahedronGeometry(1.1),      color: 0xf0a500, op: 0.26, p: [4.5, 1.8, -2.2], rs: [0.004, 0.002, 0.006] },
-      { G: new THREE.TetrahedronGeometry(1.0),      color: 0x00e5ff, op: 0.24, p: [-4.2, -1.2, -1.5], rs: [0.006, 0.003, 0.004] },
-      { G: new THREE.IcosahedronGeometry(0.55, 0), color: 0xf0a500, op: 0.32, p: [-2.8, 2.8, -0.5], rs: [0.008, 0.004, 0.005] },
-      { G: new THREE.TorusGeometry(0.85, 0.2, 6, 10), color: 0xf0a500, op: 0.28, p: [3.2, -2.8, 0], rs: [0.005, 0.003, 0.007] },
-      { G: new THREE.OctahedronGeometry(0.65),     color: 0x00e5ff, op: 0.28, p: [-3.5, 1.2, 0.5], rs: [0.003, 0.007, 0.004] },
-      { G: new THREE.TetrahedronGeometry(0.5),      color: 0x00e5ff, op: 0.2,  p: [0.5, 3.5, -1],  rs: [0.007, 0.005, 0.003] },
-      { G: new THREE.IcosahedronGeometry(0.4, 0),  color: 0xf0a500, op: 0.28, p: [-1.5, -3, 0.5], rs: [0.004, 0.008, 0.006] },
-    ];
-
-    const meshes = defs.map(d => {
-      const mat = new THREE.MeshBasicMaterial({ color: d.color, wireframe: true, transparent: true, opacity: d.op });
-      const m = new THREE.Mesh(d.G, mat);
-      m.position.set(...d.p);
-      m.userData.rs = d.rs;
-      scene.add(m);
-      return m;
-    });
-
-    let mx = 0, my = 0;
-    const onMove = e => { mx = (e.clientX / w - 0.5) * 2; my = (e.clientY / h - 0.5) * 1.5; };
-    window.addEventListener("mousemove", onMove);
-
-    let raf;
-    const tick = () => {
-      raf = requestAnimationFrame(tick);
-      meshes.forEach(m => {
-        m.rotation.x += m.userData.rs[0];
-        m.rotation.y += m.userData.rs[1];
-        m.rotation.z += m.userData.rs[2];
-      });
-      cam.position.x += (mx * 0.25 - cam.position.x) * 0.035;
-      cam.position.y += (-my * 0.2 - cam.position.y) * 0.035;
-      cam.lookAt(0, 0, 0);
-      renderer.render(scene, cam);
-    };
-    tick();
-
-    const onResize = () => {
-      w = window.innerWidth; h = window.innerHeight;
-      cam.aspect = w / h; cam.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-    window.addEventListener("resize", onResize);
-    return () => {
-      cancelAnimationFrame(raf);
+      const s = document.getElementById("bz3");
+      if (s) document.head.removeChild(s);
       window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("resize", onResize);
-      renderer.dispose();
     };
   }, []);
 
   const features = [
-    { sym: "◈", title: "Smart PDF Parsing", body: "PyMuPDF extracts raw text from any PDF — research papers, reports, textbooks. Chunked intelligently at 1500 tokens for optimal model inference.", accent: C.cyan },
-    { sym: "⬡", title: "Live Token Streaming", body: "Watch your summary appear in real-time via SSE. Every token the model produces is pushed immediately to your screen — no waiting for the full response.", accent: C.gold },
-    { sym: "◎", title: "History & Archive", body: "Every summarization job persisted in Neon PostgreSQL. Revisit past summaries, inspect chunk-level breakdowns, and track processing status.", accent: C.cyan },
+    { sym: "◈", title: "Smart PDF Parsing",    body: "PyMuPDF extracts all text and splits it into intelligent 1500-token chunks — ready for the model to digest one piece at a time." },
+    { sym: "⬡", title: "Live Token Streaming", body: "Summaries appear word-by-word in real time via Server-Sent Events. No spinner, no waiting — just instant output as the model generates." },
+    { sym: "◎", title: "Full Job History",      body: "Every upload persisted in PostgreSQL. Revisit any past summary, inspect chunk-level breakdowns, and track job status at a glance." },
   ];
-
   const steps = [
-    { n: "01", label: "Upload",  sub: "Drag & drop any PDF into the upload zone",                          accent: C.cyan },
-    { n: "02", label: "Process", sub: "Mistral 7B reads and summarizes every chunk",                        accent: C.gold },
-    { n: "03", label: "Stream",  sub: "Complete summary appears token-by-token in real time",               accent: C.cyan },
+    { n: "01", label: "Upload",  body: "Drag & drop any PDF. FastAPI saves it to Cloudflare R2 and creates a job in your database with status pending." },
+    { n: "02", label: "Process", body: "Text is extracted, chunked, and each piece is sent to the Mistral 7B model on HF Spaces. A second-pass combines all chunks into one clean summary." },
+    { n: "03", label: "Stream",  body: "Every token the model produces is pushed immediately to your browser via SSE — the summary types itself out in real time." },
   ];
-
   const stats = [
-    { v: "7B",    l: "Parameters"      },
-    { v: "4-bit", l: "Quantized"       },
-    { v: "200",   l: "Fine-tune Steps" },
-    { v: "SSE",   l: "Real-time Stream"},
+    { v: "7B",   l: "Parameters"      },
+    { v: "4bit", l: "Quantized"       },
+    { v: "200",  l: "Fine-tune Steps" },
+    { v: "SSE",  l: "Live Stream"     },
   ];
 
-  const Z = {
-    root:    { background: C.bg, color: C.white, fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", overflowX: "hidden" },
-    canvas:  { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none" },
-    aurora:  {
-      position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none",
-      background: `radial-gradient(ellipse at 12% 55%, rgba(0,229,255,0.07) 0%, transparent 55%),
-                   radial-gradient(ellipse at 88% 20%, rgba(240,165,0,0.06) 0%, transparent 50%),
-                   radial-gradient(ellipse at 50% 88%, rgba(0,60,255,0.04) 0%, transparent 55%)`,
-      animation: "aurora-drift 12s ease-in-out infinite alternate",
-    },
-    grid:    {
-      position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none",
-      backgroundImage: `linear-gradient(rgba(255,255,255,0.033) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255,255,255,0.033) 1px, transparent 1px)`,
-      backgroundSize: "64px 64px",
-      WebkitMaskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
-      maskImage:       "radial-gradient(ellipse at center, black 20%, transparent 75%)",
-    },
-    body:    { position: "relative", zIndex: 1 },
+  const px = (mouse.x - 0.5) * 18;
+  const py = (mouse.y - 0.5) * 12;
+
+  const root = {
+    background: T.bg, color: T.ink,
+    fontFamily: "'DM Sans', sans-serif",
+    minHeight: "100vh", overflowX: "hidden",
+    transition: "background .35s ease, color .35s ease",
+    opacity: toggling ? 0 : 1,
   };
 
   return (
-    <div style={Z.root}>
-      <canvas ref={canvasRef} style={Z.canvas} />
-      <div style={Z.aurora} />
-      <div style={Z.grid} />
+    <div style={root}>
 
-      <div style={Z.body}>
+      {/* BG shapes */}
+      <div style={{ position:"fixed", inset:0, overflow:"hidden", pointerEvents:"none", zIndex:0 }}>
+        <div style={{ position:"absolute", width:520, height:520, top:-120, right:-60, borderRadius:"50%", border:`1px solid ${T.ring1}`, transform:`translate(${px*.4}px,${py*.3}px)`, transition:"transform .08s linear, border-color .35s" }} />
+        <div style={{ position:"absolute", width:320, height:320, top:60, right:80, borderRadius:"50%", border:`1px solid ${T.ring2}`, transform:`translate(${px*.7}px,${py*.5}px)`, transition:"transform .08s linear, border-color .35s", animation:"spin-slow 28s linear infinite" }} />
+        <div style={{ position:"absolute", width:200, height:200, bottom:"30%", left:-60, borderRadius:"50%", border:`1px solid ${T.ring3}`, transform:`translate(${px*.3}px,${py*.4}px)`, transition:"transform .08s linear, border-color .35s" }} />
+        <div style={{ position:"absolute", width:180, height:180, top:"38%", left:"18%", borderRadius:"50%", background:`radial-gradient(circle, ${T.glow} 0%, transparent 70%)`, transform:`translate(${px*.2}px,${py*.2}px)`, transition:"transform .12s linear, background .35s", animation:"float-y 7s ease-in-out infinite" }} />
+      </div>
 
-        {/* ── NAV ── */}
+      <div style={{ position:"relative", zIndex:1 }}>
+
+        {/* NAV */}
         <nav style={{
-          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 52px", height: "60px",
-          backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
-          background: "rgba(7,7,9,0.7)",
-          borderBottom: `1px solid ${C.border}`,
+          position:"fixed", top:0, left:0, right:0, zIndex:100,
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          padding:"0 52px", height:"56px",
+          background: T.navBg,
+          backdropFilter:"blur(20px)", WebkitBackdropFilter:"blur(20px)",
+          borderBottom:`1px solid ${T.border}`,
+          transition:"background .35s, border-color .35s",
         }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "17px", letterSpacing: "0.08em" }}>
-            <span style={{ color: C.cyan }}>BOTZ</span>
-            <span style={{ color: C.white }}>CODER</span>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"15px", letterSpacing:".07em" }}>
+            <span style={{ color:T.gold }}>BOTZ</span><span style={{ color:T.ink }}>CODER</span>
           </div>
-          <div style={{ display: "flex", gap: "36px" }}>
-            {["SUMMARIZE", "HISTORY", "DOCS"].map(l => <a key={l} href="#" className="nav-link">{l}</a>)}
+          <div style={{ display:"flex", gap:"32px" }}>
+            {["SUMMARIZE","HISTORY","DOCS"].map(l => (
+              <a key={l} href="#" className="nav-link" style={{ color:T.muted }}
+                onMouseEnter={e => e.target.style.color = T.ink}
+                onMouseLeave={e => e.target.style.color = T.muted}>{l}</a>
+            ))}
           </div>
-          <button className="nav-try">TRY NOW →</button>
+          <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+            {/* Dark mode toggle */}
+            <button
+              className="theme-btn"
+              onClick={toggle}
+              title={dark ? "Switch to light mode" : "Switch to dark mode"}
+              style={{ borderColor: T.border, color: T.muted }}
+            >
+              {dark ? "☀" : "☽"}
+            </button>
+            <button
+              className="btn-primary"
+              style={{ background: T.ink, color: T.bg, padding:"8px 20px" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = ".8"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}
+            >TRY NOW →</button>
+          </div>
         </nav>
 
-        {/* ── HERO ── */}
-        <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "120px 64px 80px", position: "relative" }}>
-
-          {/* Live badge */}
+        {/* HERO */}
+        <section style={{ minHeight:"100vh", display:"flex", flexDirection:"column", justifyContent:"center", padding:"120px 64px 80px" }}>
           <div className="fi1" style={{
-            display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "36px",
-            padding: "6px 16px", background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.25)",
-            borderRadius: "2px", width: "fit-content",
+            display:"inline-flex", alignItems:"center", gap:"8px", marginBottom:"32px", width:"fit-content",
+            padding:"5px 14px", background:`rgba(${dark?"224,155,42":"200,134,26"},0.1)`,
+            border:`1px solid rgba(${dark?"224,155,42":"200,134,26"},0.25)`, borderRadius:"2px",
+            transition:"background .35s, border-color .35s",
           }}>
-            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: C.cyan, flexShrink: 0, animation: "pulse-dot 2s infinite" }} />
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.cyan, letterSpacing: "0.12em" }}>
+            <span style={{ width:"6px", height:"6px", borderRadius:"50%", background:T.gold, animation:"blink 2s infinite", flexShrink:0 }} />
+            <span style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.gold, letterSpacing:".1em" }}>
               aman012/mistral-7b-instruct-v0.3-bnb-4bit-200
             </span>
           </div>
 
-          {/* Giant headline */}
-          <div style={{ marginBottom: "32px", lineHeight: 0.88 }}>
-            <div className="fi2" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(52px, 10vw, 124px)", letterSpacing: "-0.025em" }}>
-              SUMMARIZE
-            </div>
-            <div className="fi3" style={{
-              fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(52px, 10vw, 124px)", letterSpacing: "-0.025em",
-              WebkitTextStroke: `2px ${C.cyan}`, WebkitTextFillColor: "transparent", color: "transparent",
-            }}>
-              ANY PDF
-            </div>
-            <div className="fi4" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(52px, 10vw, 124px)", letterSpacing: "-0.025em" }}>
-              WITH AI.
-            </div>
+          <div style={{ marginBottom:"28px" }}>
+            <div className="fi2" style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(48px,9vw,108px)", letterSpacing:"-.03em", lineHeight:.9, color:T.ink, transition:"color .35s" }}>SUMMARIZE</div>
+            <div className="fi3" style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(48px,9vw,108px)", letterSpacing:"-.03em", lineHeight:.9, WebkitTextStroke:`1.5px ${T.gold}`, WebkitTextFillColor:"transparent", transition:"all .35s" }}>ANY PDF</div>
+            <div className="fi4" style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(48px,9vw,108px)", letterSpacing:"-.03em", lineHeight:.9, color:T.ink, transition:"color .35s" }}>WITH AI.</div>
           </div>
 
-          <p className="fi4" style={{ maxWidth: "480px", lineHeight: 1.75, color: C.muted, fontSize: "15px", fontWeight: 300, marginBottom: "44px" }}>
-            Upload any PDF — research papers, legal docs, textbooks.
-            Mistral 7B reads it in intelligent chunks and streams a
-            comprehensive summary directly to your screen.
+          <p className="fi4" style={{ maxWidth:"420px", lineHeight:1.8, color:T.muted, fontSize:"15px", fontWeight:300, marginBottom:"40px", transition:"color .35s" }}>
+            Upload any PDF — papers, contracts, textbooks.
+            Mistral 7B chunks and streams a clean summary
+            directly to your screen, token by token.
           </p>
 
-          <div className="fi5" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
-            <button className="btn-cta">UPLOAD PDF →</button>
-            <button className="btn-ghost">VIEW HISTORY</button>
-          </div>
-
-          {/* Scroll indicator */}
-          <div style={{ position: "absolute", bottom: "48px", left: "64px", display: "flex", alignItems: "center", gap: "14px" }}>
-            <div style={{ width: "1px", height: "56px", background: `linear-gradient(to bottom, ${C.cyan}, transparent)` }} />
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: C.muted, letterSpacing: "0.2em", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
-              SCROLL
-            </span>
+          <div className="fi5" style={{ display:"flex", gap:"12px", flexWrap:"wrap" }}>
+            <button className="btn-primary" style={{ background:T.ink, color:T.bg }}
+              onMouseEnter={e => e.currentTarget.style.opacity=".8"}
+              onMouseLeave={e => e.currentTarget.style.opacity="1"}>UPLOAD PDF →</button>
+            <button className="btn-outline" style={{ color:T.muted, border:`1px solid ${T.border}` }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor=T.ink; e.currentTarget.style.color=T.ink; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.muted; }}>VIEW HISTORY</button>
           </div>
         </section>
 
-        {/* ── STATS ── */}
-        <div style={{ padding: "0 64px 100px" }}>
+        {/* STATS */}
+        <div style={{ padding:"0 64px 100px" }}>
           <div style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "1px", background: C.border, border: `1px solid ${C.border}`, maxWidth: "860px",
+            display:"grid", gridTemplateColumns:"repeat(4,1fr)",
+            border:`1px solid ${T.border}`, background:T.surface,
+            borderRadius:"4px", overflow:"hidden", maxWidth:"800px",
+            transition:"background .35s, border-color .35s",
           }}>
-            {stats.map(s => (
-              <div key={s.l} className="stat-cell">
-                <div className="sv" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(26px, 3.5vw, 40px)", color: C.white, marginBottom: "6px" }}>{s.v}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.muted, letterSpacing: "0.14em" }}>{s.l}</div>
+            {stats.map((s,i) => (
+              <div key={s.l} className="stat-item" style={{ padding:"28px 20px", textAlign:"center", borderRight:i<3?`1px solid ${T.border}`:"none", transition:"border-color .35s" }}>
+                <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(22px,3vw,36px)", color:T.ink, marginBottom:"5px", transition:"color .35s" }}>{s.v}</div>
+                <div style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.muted, letterSpacing:".12em", transition:"color .35s" }}>{s.l}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* ── FEATURES ── */}
-        <section style={{ padding: "80px 64px 100px" }}>
-          <div style={{ marginBottom: "64px" }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.cyan, letterSpacing: "0.24em", marginBottom: "16px" }}>— CAPABILITIES</div>
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(32px, 5vw, 62px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}>
-              What it does.
-            </h2>
+        {/* FEATURES */}
+        <section style={{ padding:"60px 64px 100px" }}>
+          <div style={{ marginBottom:"52px" }}>
+            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.gold, letterSpacing:".22em", marginBottom:"14px" }}>— CAPABILITIES</div>
+            <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(28px,4vw,52px)", letterSpacing:"-.02em", lineHeight:1.05, color:T.ink, transition:"color .35s" }}>What it does.</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1px", background: C.border }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:"16px" }}>
             {features.map(f => (
-              <div key={f.title} className="feat-card">
-                <div className="feat-icon" style={{ fontSize: "26px", color: f.accent, marginBottom: "28px" }}>{f.sym}</div>
-                <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "18px", marginBottom: "14px", letterSpacing: "-0.01em" }}>{f.title}</h3>
-                <p style={{ color: C.muted, lineHeight: 1.72, fontSize: "14px", fontWeight: 300 }}>{f.body}</p>
+              <div key={f.title} className="feat-card" style={{
+                padding:"36px 32px", background:T.surface,
+                border:`1px solid ${T.border}`, borderRadius:"4px",
+                transition:"background .35s, border-color .35s, transform .3s, box-shadow .3s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow = T.cardHover}
+                onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}>
+                <div style={{ fontSize:"22px", color:T.gold, marginBottom:"20px" }}>{f.sym}</div>
+                <h3 style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:"17px", marginBottom:"12px", letterSpacing:"-.01em", color:T.ink, transition:"color .35s" }}>{f.title}</h3>
+                <p style={{ color:T.muted, lineHeight:1.75, fontSize:"14px", fontWeight:300, transition:"color .35s" }}>{f.body}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── HOW IT WORKS ── */}
-        <section style={{ padding: "60px 64px 120px" }}>
-          <div style={{ marginBottom: "60px" }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.gold, letterSpacing: "0.24em", marginBottom: "16px" }}>— HOW IT WORKS</div>
-            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(32px, 5vw, 62px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}>Three steps.</h2>
+        {/* HOW IT WORKS */}
+        <section style={{ padding:"40px 64px 100px" }}>
+          <div style={{ marginBottom:"52px" }}>
+            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.muted, letterSpacing:".22em", marginBottom:"14px" }}>— PROCESS</div>
+            <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(28px,4vw,52px)", letterSpacing:"-.02em", lineHeight:1.05, color:T.ink, transition:"color .35s" }}>Three steps.</h2>
           </div>
-          <div style={{ maxWidth: "920px" }}>
+          <div style={{ maxWidth:"780px" }}>
             {steps.map(s => (
-              <div key={s.n} className="step-row">
-                <span className="step-n" style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: s.accent, letterSpacing: "0.08em", minWidth: "28px", fontWeight: 700 }}>{s.n}</span>
-                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "clamp(22px, 3vw, 44px)", flex: 1, letterSpacing: "-0.015em" }}>{s.label}</span>
-                <span style={{ color: C.muted, fontSize: "14px", maxWidth: "320px", fontWeight: 300, lineHeight: 1.65 }}>{s.sub}</span>
-                <div className="step-arrow" style={{
-                  width: "38px", height: "38px", border: `1px solid ${C.border}`, borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: C.muted, fontSize: "16px", flexShrink: 0,
-                }}>→</div>
+              <div key={s.n} className="step-item" style={{ display:"flex", alignItems:"flex-start", gap:"24px", padding:"28px 0", borderBottom:`1px solid ${T.border}`, transition:"border-color .35s" }}>
+                <span style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.gold, letterSpacing:".08em", minWidth:"24px", paddingTop:"3px" }}>{s.n}</span>
+                <div>
+                  <div className="step-label-inner" style={{ fontFamily:"'Syne',sans-serif", fontWeight:700, fontSize:"clamp(20px,2.5vw,32px)", letterSpacing:"-.015em", marginBottom:"8px", color:T.ink, transition:"color .35s, opacity .2s" }}>{s.label}</div>
+                  <p style={{ color:T.muted, fontSize:"14px", lineHeight:1.72, fontWeight:300, maxWidth:"520px", transition:"color .35s" }}>{s.body}</p>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── CTA ── */}
-        <section style={{ margin: "0 64px 120px" }}>
+        {/* CTA */}
+        <section style={{ margin:"0 64px 100px" }}>
           <div style={{
-            padding: "80px 64px", textAlign: "center",
-            background: "linear-gradient(135deg, rgba(0,229,255,0.07) 0%, rgba(240,165,0,0.05) 100%)",
-            border: `1px solid ${C.border}`, borderRadius: "4px",
-            backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+            padding:"72px 60px", textAlign:"center",
+            background: dark ? "#1c1a15" : "#1a1714",
+            border: dark ? `1px solid ${T.border}` : "none",
+            borderRadius:"4px",
+            transition:"background .35s, border-color .35s",
           }}>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.cyan, letterSpacing: "0.24em", marginBottom: "24px" }}>— GET STARTED</div>
-            <h2 style={{
-              fontFamily: "'Syne', sans-serif", fontWeight: 800,
-              fontSize: "clamp(36px, 6vw, 78px)", lineHeight: 0.92, letterSpacing: "-0.025em",
-              marginBottom: "24px",
-            }}>
-              Drop your PDF.<br />
-              <span style={{ color: C.cyan }}>Get a summary.</span>
+            <div style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.gold, letterSpacing:".22em", marginBottom:"20px" }}>— GET STARTED</div>
+            <h2 style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"clamp(30px,5vw,62px)", lineHeight:.95, letterSpacing:"-.025em", color: dark?"#f0ece4":"#f5f3ef", marginBottom:"20px" }}>
+              Drop your PDF.<br /><span style={{ color:T.gold }}>Get a summary.</span>
             </h2>
-            <p style={{ color: C.muted, fontSize: "15px", maxWidth: "380px", margin: "0 auto 44px", lineHeight: 1.72, fontWeight: 300 }}>
-              Powered by a fine-tuned Mistral 7B model, hosted free on Hugging Face Spaces. No sign-up required.
+            <p style={{ color: dark?"rgba(240,236,228,0.35)":"rgba(245,243,239,0.45)", fontSize:"14px", maxWidth:"340px", margin:"0 auto 36px", lineHeight:1.75, fontWeight:300 }}>
+              Fine-tuned Mistral 7B on Hugging Face Spaces. Free to use. No sign-up required.
             </p>
-            <button className="btn-cta" style={{ padding: "16px 52px", fontSize: "13px" }}>LAUNCH SUMMARIZER →</button>
+            <button className="btn-primary" style={{ background:T.gold, color:"#fff", padding:"14px 48px", fontSize:"12px" }}
+              onMouseEnter={e => e.currentTarget.style.opacity=".85"}
+              onMouseLeave={e => e.currentTarget.style.opacity="1"}>
+              LAUNCH SUMMARIZER →
+            </button>
           </div>
         </section>
 
-        {/* ── FOOTER ── */}
-        <footer style={{
-          padding: "36px 64px", borderTop: `1px solid ${C.border}`,
-          display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px",
-        }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: "0.08em" }}>
-            <span style={{ color: C.cyan }}>BOTZ</span><span>CODER</span>
+        {/* FOOTER */}
+        <footer style={{ padding:"28px 64px", borderTop:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"12px", transition:"border-color .35s" }}>
+          <div style={{ fontFamily:"'Syne',sans-serif", fontWeight:800, fontSize:"14px", letterSpacing:".07em" }}>
+            <span style={{ color:T.gold }}>BOTZ</span><span style={{ color:T.ink }}>CODER</span>
           </div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.muted, letterSpacing: "0.1em" }}>
-            www.botzcoder.com — Built with Mistral AI
-          </div>
-          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.muted }}>
-            Next.js · FastAPI · PostgreSQL · HF Spaces
-          </div>
+          <div style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.muted }}>www.botzcoder.com</div>
+          <div style={{ fontFamily:"'Space Mono',monospace", fontSize:"10px", color:T.muted }}>Next.js · FastAPI · PostgreSQL · HF Spaces</div>
         </footer>
 
       </div>

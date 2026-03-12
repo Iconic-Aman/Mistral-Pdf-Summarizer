@@ -1,14 +1,18 @@
-export default function Footer() {
+"use client";
+
+import { Theme } from "@/lib/constants";
+
+export default function Footer({ T }: { T: Theme }) {
     return (
-        <footer className="py-[36px] px-[64px] border-t border-white/10 flex justify-between items-center flex-wrap gap-[16px] relative z-[1]">
-            <div className="font-syne font-extrabold text-[15px] tracking-[0.08em]">
-                <span className="text-[#00e5ff]">BOTZ</span>
-                <span className="text-[#f0f0f0]">CODER</span>
+        <footer style={{ padding: "28px 64px", borderTop: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", transition: "border-color .35s" }}>
+            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "14px", letterSpacing: ".07em" }}>
+                <span style={{ color: T.gold }}>BOTZ</span>
+                <span style={{ color: T.ink }}>CODER</span>
             </div>
-            <div className="font-space-mono text-[10px] text-white/50 tracking-[0.1em]">
-                www.botzcoder.com — Built with Mistral AI
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted }}>
+                www.botzcoder.com
             </div>
-            <div className="font-space-mono text-[10px] text-white/50">
+            <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted }}>
                 Next.js · FastAPI · PostgreSQL · HF Spaces
             </div>
         </footer>

@@ -1,36 +1,37 @@
-import { C } from "@/lib/constants";
+"use client";
 
-export default function HowItWorksSection() {
+import { Theme } from "@/lib/constants";
+
+export default function HowItWorksSection({ T }: { T: Theme }) {
     const steps = [
-        { n: "01", label: "Upload", sub: "Drag & drop any PDF into the upload zone", accent: C.cyan },
-        { n: "02", label: "Process", sub: "Mistral 7B reads and summarizes every chunk", accent: C.gold },
-        { n: "03", label: "Stream", sub: "Complete summary appears token-by-token in real time", accent: C.cyan },
+        { n: "01", label: "Upload", body: "Drag & drop any PDF. FastAPI saves it to Cloudflare R2 and creates a job in your database with status pending." },
+        { n: "02", label: "Process", body: "Text is extracted, chunked, and each piece is sent to the Mistral 7B model on HF Spaces. A second-pass combines all chunks into one clean summary." },
+        { n: "03", label: "Stream", body: "Every token the model produces is pushed immediately to your browser via SSE — the summary types itself out in real time." },
     ];
 
     return (
-        <section className="px-[64px] pt-[60px] pb-[120px]">
-            <div className="mb-[60px]">
-                <div className="font-space-mono text-[10px] text-[#f0a500] tracking-[0.24em] mb-[16px]">
-                    — HOW IT WORKS
+        <section style={{ padding: "40px 64px 100px" }}>
+            <div style={{ marginBottom: "52px" }}>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".22em", marginBottom: "14px" }}>
+                    — PROCESS
                 </div>
-                <h2 className="font-syne font-extrabold text-[clamp(32px,5vw,62px)] leading-[1.05] tracking-[-0.02em]">
+                <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(28px,4vw,52px)", letterSpacing: "-.02em", lineHeight: 1.05, color: T.ink, transition: "color .35s" }}>
                     Three steps.
                 </h2>
             </div>
-            <div className="max-w-[920px]">
+            <div style={{ maxWidth: "780px" }}>
                 {steps.map(s => (
-                    <div key={s.n} className="step-row">
-                        <span className="step-n font-space-mono text-[10px] tracking-[0.08em] min-w-[28px] font-bold" style={{ color: s.accent }}>
+                    <div key={s.n} className="step-item" style={{ display: "flex", alignItems: "flex-start", gap: "24px", padding: "28px 0", borderBottom: `1px solid ${T.border}`, transition: "border-color .35s" }}>
+                        <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold, letterSpacing: ".08em", minWidth: "24px", paddingTop: "3px" }}>
                             {s.n}
                         </span>
-                        <span className="font-syne font-bold text-[clamp(22px,3vw,44px)] flex-1 tracking-[-0.015em]">
-                            {s.label}
-                        </span>
-                        <span className="text-white/50 text-[14px] max-w-[320px] font-light leading-[1.65]">
-                            {s.sub}
-                        </span>
-                        <div className="step-arrow w-[38px] h-[38px] border border-white/10 rounded-full flex items-center justify-center text-white/50 text-[16px] shrink-0">
-                            →
+                        <div>
+                            <div className="step-label-inner" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "clamp(20px,2.5vw,32px)", letterSpacing: "-.015em", marginBottom: "8px", color: T.ink, transition: "color .35s, opacity .2s" }}>
+                                {s.label}
+                            </div>
+                            <p style={{ color: T.muted, fontSize: "14px", lineHeight: 1.72, fontWeight: 300, maxWidth: "520px", transition: "color .35s" }}>
+                                {s.body}
+                            </p>
                         </div>
                     </div>
                 ))}

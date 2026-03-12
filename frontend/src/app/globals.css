@@ -1,0 +1,112 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: #070709 !important; overflow-x: hidden; color: #f0f0f0; }
+
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: #070709; }
+  ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.3); }
+}
+
+@layer utilities {
+  .fi1 { animation: fadeUp 0.9s ease 0.1s forwards; opacity: 0; }
+  .fi2 { animation: fadeUp 0.9s ease 0.3s forwards; opacity: 0; }
+  .fi3 { animation: fadeUp 0.9s ease 0.5s forwards; opacity: 0; }
+  .fi4 { animation: fadeUp 0.9s ease 0.7s forwards; opacity: 0; }
+  .fi5 { animation: fadeUp 0.9s ease 0.9s forwards; opacity: 0; }
+
+  .bg-aurora {
+    background: radial-gradient(ellipse at 12% 55%, rgba(0,229,255,0.07) 0%, transparent 55%),
+                radial-gradient(ellipse at 88% 20%, rgba(240,165,0,0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 88%, rgba(0,60,255,0.04) 0%, transparent 55%);
+    animation: aurora-drift 12s ease-in-out infinite alternate;
+  }
+  
+  .bg-grid-pattern {
+    background-image: linear-gradient(rgba(255,255,255,0.033) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.033) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+    mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+  }
+}
+
+@layer components {
+  .btn-cta {
+    @apply inline-flex items-center gap-2 px-9 py-3.5 bg-transparent border border-[#00e5ff] text-[#00e5ff] font-space-mono text-xs tracking-[0.13em] cursor-pointer rounded-sm transition-all duration-300;
+  }
+  .btn-cta:hover {
+    @apply bg-[#00e5ff] text-black -translate-y-[2px];
+    box-shadow: 0 0 44px rgba(0,229,255,0.45);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-9 py-3.5 bg-transparent border border-white/10 text-white/45 font-space-mono text-xs tracking-[0.13em] cursor-pointer rounded-sm transition-all duration-300;
+  }
+  .btn-ghost:hover {
+    @apply border-white/50 text-[#f0f0f0] -translate-y-[2px];
+  }
+
+  .feat-card {
+    @apply p-12 bg-white/5 border-b border-white/10 transition-all duration-300 cursor-default;
+  }
+  .feat-card:hover {
+    @apply bg-white/10 -translate-y-1;
+  }
+  .feat-card:hover .feat-icon {
+    @apply scale-110 rotate-12;
+  }
+
+  .step-row {
+    @apply flex items-center gap-10 py-9 border-b border-white/10 transition-all duration-300 cursor-default;
+  }
+  .step-row:last-child {
+    @apply border-none;
+  }
+  .step-row:hover .step-n {
+    @apply text-[#00e5ff];
+  }
+  .step-row:hover .step-arrow {
+    @apply border-[#00e5ff]/50 text-[#00e5ff];
+  }
+
+  .stat-cell {
+    @apply p-8 bg-[#070709] text-center cursor-default transition-all duration-300;
+  }
+  .stat-cell:hover .sv {
+    @apply text-[#00e5ff];
+  }
+
+  .nav-link {
+    @apply text-[#f0f0f0]/40 no-underline font-space-mono text-[11px] tracking-[0.1em] transition-colors duration-200;
+  }
+  .nav-link:hover {
+    @apply text-[#f0f0f0];
+  }
+
+  .nav-try {
+    @apply px-4 py-1.5 border border-[#00e5ff]/45 rounded-sm text-[#00e5ff] text-[11px] font-space-mono cursor-pointer tracking-[0.1em] bg-transparent transition-colors duration-200;
+  }
+  .nav-try:hover {
+    @apply bg-[#00e5ff]/10;
+  }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+@keyframes aurora-drift {
+  0% { transform: scale(1); opacity: 0.65; }
+  100% { transform: scale(1.14) rotate(4deg); opacity: 1; }
+}

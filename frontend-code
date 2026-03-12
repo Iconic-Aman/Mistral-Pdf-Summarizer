@@ -1,0 +1,410 @@
+import { useEffect, useRef } from "react";
+import * as THREE from "three";
+
+const C = {
+  bg: "#070709",
+  cyan: "#00e5ff",
+  gold: "#f0a500",
+  white: "#f0f0f0",
+  muted: "rgba(240,240,240,0.48)",
+  surface: "rgba(255,255,255,0.04)",
+  border: "rgba(255,255,255,0.08)",
+};
+
+export default function BotZCoderLanding() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400&display=swap";
+    document.head.appendChild(link);
+
+    const style = document.createElement("style");
+    style.id = "bz-styles";
+    style.textContent = `
+      *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body { background: #070709 !important; overflow-x: hidden; }
+      ::-webkit-scrollbar { width: 3px; }
+      ::-webkit-scrollbar-track { background: #070709; }
+      ::-webkit-scrollbar-thumb { background: rgba(0,229,255,0.3); }
+
+      @keyframes fadeUp {
+        from { opacity: 0; transform: translateY(28px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes pulse-dot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.35; transform: scale(0.75); }
+      }
+      @keyframes aurora-drift {
+        0% { transform: scale(1); opacity: 0.65; }
+        100% { transform: scale(1.14) rotate(4deg); opacity: 1; }
+      }
+
+      .fi1 { animation: fadeUp 0.9s ease 0.1s forwards; opacity: 0; }
+      .fi2 { animation: fadeUp 0.9s ease 0.3s forwards; opacity: 0; }
+      .fi3 { animation: fadeUp 0.9s ease 0.5s forwards; opacity: 0; }
+      .fi4 { animation: fadeUp 0.9s ease 0.7s forwards; opacity: 0; }
+      .fi5 { animation: fadeUp 0.9s ease 0.9s forwards; opacity: 0; }
+
+      .btn-cta {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 14px 36px; background: transparent;
+        border: 1px solid #00e5ff; color: #00e5ff;
+        font-family: 'Space Mono', monospace; font-size: 12px;
+        letter-spacing: 0.13em; cursor: pointer; border-radius: 3px;
+        transition: all 0.3s ease;
+      }
+      .btn-cta:hover {
+        background: #00e5ff; color: #000;
+        transform: translateY(-2px);
+        box-shadow: 0 0 44px rgba(0,229,255,0.45);
+      }
+      .btn-ghost {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 14px 36px; background: transparent;
+        border: 1px solid rgba(255,255,255,0.12);
+        color: rgba(240,240,240,0.45);
+        font-family: 'Space Mono', monospace; font-size: 12px;
+        letter-spacing: 0.13em; cursor: pointer; border-radius: 3px;
+        transition: all 0.3s ease;
+      }
+      .btn-ghost:hover { border-color: rgba(255,255,255,0.5); color: #f0f0f0; transform: translateY(-2px); }
+
+      .feat-card {
+        padding: 48px 40px; background: rgba(255,255,255,0.04);
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        transition: all 0.35s ease; cursor: default;
+      }
+      .feat-card:hover { background: rgba(255,255,255,0.07); transform: translateY(-4px); }
+      .feat-card:hover .feat-icon { transform: scale(1.15) rotate(12deg); }
+      .feat-icon { transition: transform 0.3s ease; display: inline-block; }
+
+      .step-row {
+        display: flex; align-items: center; gap: 40px;
+        padding: 36px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+        transition: all 0.25s ease; cursor: default;
+      }
+      .step-row:last-child { border-bottom: none; }
+      .step-row:hover .step-n { color: #00e5ff !important; }
+      .step-row:hover .step-arrow { border-color: rgba(0,229,255,0.5) !important; color: #00e5ff !important; }
+      .step-n { transition: color 0.25s; }
+      .step-arrow { transition: all 0.25s; }
+
+      .stat-cell {
+        padding: 32px 24px; background: #070709;
+        text-align: center; cursor: default; transition: all 0.3s;
+      }
+      .stat-cell:hover .sv { color: #00e5ff !important; }
+      .sv { transition: color 0.3s; }
+
+      .nav-link {
+        color: rgba(240,240,240,0.42); text-decoration: none;
+        font-family: 'Space Mono', monospace; font-size: 11px;
+        letter-spacing: 0.1em; transition: color 0.2s;
+      }
+      .nav-link:hover { color: #f0f0f0; }
+
+      .nav-try {
+        padding: 7px 18px;
+        border: 1px solid rgba(0,229,255,0.45); border-radius: 3px;
+        color: #00e5ff; font-size: 11px;
+        font-family: 'Space Mono', monospace; cursor: pointer;
+        letter-spacing: 0.1em; background: transparent;
+        transition: background 0.2s;
+      }
+      .nav-try:hover { background: rgba(0,229,255,0.1); }
+    `;
+    document.head.appendChild(style);
+    return () => {
+      if (document.head.contains(link)) document.head.removeChild(link);
+      const s = document.getElementById("bz-styles");
+      if (s && document.head.contains(s)) document.head.removeChild(s);
+    };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const scene = new THREE.Scene();
+    let w = window.innerWidth, h = window.innerHeight;
+    const cam = new THREE.PerspectiveCamera(55, w / h, 0.1, 100);
+    cam.position.z = 6.5;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(w, h);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const defs = [
+      { G: new THREE.IcosahedronGeometry(2.0, 0), color: 0x00e5ff, op: 0.28, p: [1.2, 0.3, -1.5], rs: [0.003, 0.005, 0.002] },
+      { G: new THREE.OctahedronGeometry(1.1),      color: 0xf0a500, op: 0.26, p: [4.5, 1.8, -2.2], rs: [0.004, 0.002, 0.006] },
+      { G: new THREE.TetrahedronGeometry(1.0),      color: 0x00e5ff, op: 0.24, p: [-4.2, -1.2, -1.5], rs: [0.006, 0.003, 0.004] },
+      { G: new THREE.IcosahedronGeometry(0.55, 0), color: 0xf0a500, op: 0.32, p: [-2.8, 2.8, -0.5], rs: [0.008, 0.004, 0.005] },
+      { G: new THREE.TorusGeometry(0.85, 0.2, 6, 10), color: 0xf0a500, op: 0.28, p: [3.2, -2.8, 0], rs: [0.005, 0.003, 0.007] },
+      { G: new THREE.OctahedronGeometry(0.65),     color: 0x00e5ff, op: 0.28, p: [-3.5, 1.2, 0.5], rs: [0.003, 0.007, 0.004] },
+      { G: new THREE.TetrahedronGeometry(0.5),      color: 0x00e5ff, op: 0.2,  p: [0.5, 3.5, -1],  rs: [0.007, 0.005, 0.003] },
+      { G: new THREE.IcosahedronGeometry(0.4, 0),  color: 0xf0a500, op: 0.28, p: [-1.5, -3, 0.5], rs: [0.004, 0.008, 0.006] },
+    ];
+
+    const meshes = defs.map(d => {
+      const mat = new THREE.MeshBasicMaterial({ color: d.color, wireframe: true, transparent: true, opacity: d.op });
+      const m = new THREE.Mesh(d.G, mat);
+      m.position.set(...d.p);
+      m.userData.rs = d.rs;
+      scene.add(m);
+      return m;
+    });
+
+    let mx = 0, my = 0;
+    const onMove = e => { mx = (e.clientX / w - 0.5) * 2; my = (e.clientY / h - 0.5) * 1.5; };
+    window.addEventListener("mousemove", onMove);
+
+    let raf;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      meshes.forEach(m => {
+        m.rotation.x += m.userData.rs[0];
+        m.rotation.y += m.userData.rs[1];
+        m.rotation.z += m.userData.rs[2];
+      });
+      cam.position.x += (mx * 0.25 - cam.position.x) * 0.035;
+      cam.position.y += (-my * 0.2 - cam.position.y) * 0.035;
+      cam.lookAt(0, 0, 0);
+      renderer.render(scene, cam);
+    };
+    tick();
+
+    const onResize = () => {
+      w = window.innerWidth; h = window.innerHeight;
+      cam.aspect = w / h; cam.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("resize", onResize);
+      renderer.dispose();
+    };
+  }, []);
+
+  const features = [
+    { sym: "◈", title: "Smart PDF Parsing", body: "PyMuPDF extracts raw text from any PDF — research papers, reports, textbooks. Chunked intelligently at 1500 tokens for optimal model inference.", accent: C.cyan },
+    { sym: "⬡", title: "Live Token Streaming", body: "Watch your summary appear in real-time via SSE. Every token the model produces is pushed immediately to your screen — no waiting for the full response.", accent: C.gold },
+    { sym: "◎", title: "History & Archive", body: "Every summarization job persisted in Neon PostgreSQL. Revisit past summaries, inspect chunk-level breakdowns, and track processing status.", accent: C.cyan },
+  ];
+
+  const steps = [
+    { n: "01", label: "Upload",  sub: "Drag & drop any PDF into the upload zone",                          accent: C.cyan },
+    { n: "02", label: "Process", sub: "Mistral 7B reads and summarizes every chunk",                        accent: C.gold },
+    { n: "03", label: "Stream",  sub: "Complete summary appears token-by-token in real time",               accent: C.cyan },
+  ];
+
+  const stats = [
+    { v: "7B",    l: "Parameters"      },
+    { v: "4-bit", l: "Quantized"       },
+    { v: "200",   l: "Fine-tune Steps" },
+    { v: "SSE",   l: "Real-time Stream"},
+  ];
+
+  const Z = {
+    root:    { background: C.bg, color: C.white, fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", overflowX: "hidden" },
+    canvas:  { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none" },
+    aurora:  {
+      position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none",
+      background: `radial-gradient(ellipse at 12% 55%, rgba(0,229,255,0.07) 0%, transparent 55%),
+                   radial-gradient(ellipse at 88% 20%, rgba(240,165,0,0.06) 0%, transparent 50%),
+                   radial-gradient(ellipse at 50% 88%, rgba(0,60,255,0.04) 0%, transparent 55%)`,
+      animation: "aurora-drift 12s ease-in-out infinite alternate",
+    },
+    grid:    {
+      position: "fixed", top: 0, left: 0, width: "100%", height: "100%", zIndex: 0, pointerEvents: "none",
+      backgroundImage: `linear-gradient(rgba(255,255,255,0.033) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.033) 1px, transparent 1px)`,
+      backgroundSize: "64px 64px",
+      WebkitMaskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
+      maskImage:       "radial-gradient(ellipse at center, black 20%, transparent 75%)",
+    },
+    body:    { position: "relative", zIndex: 1 },
+  };
+
+  return (
+    <div style={Z.root}>
+      <canvas ref={canvasRef} style={Z.canvas} />
+      <div style={Z.aurora} />
+      <div style={Z.grid} />
+
+      <div style={Z.body}>
+
+        {/* ── NAV ── */}
+        <nav style={{
+          position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 52px", height: "60px",
+          backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+          background: "rgba(7,7,9,0.7)",
+          borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "17px", letterSpacing: "0.08em" }}>
+            <span style={{ color: C.cyan }}>BOTZ</span>
+            <span style={{ color: C.white }}>CODER</span>
+          </div>
+          <div style={{ display: "flex", gap: "36px" }}>
+            {["SUMMARIZE", "HISTORY", "DOCS"].map(l => <a key={l} href="#" className="nav-link">{l}</a>)}
+          </div>
+          <button className="nav-try">TRY NOW →</button>
+        </nav>
+
+        {/* ── HERO ── */}
+        <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "120px 64px 80px", position: "relative" }}>
+
+          {/* Live badge */}
+          <div className="fi1" style={{
+            display: "inline-flex", alignItems: "center", gap: "10px", marginBottom: "36px",
+            padding: "6px 16px", background: "rgba(0,229,255,0.08)", border: "1px solid rgba(0,229,255,0.25)",
+            borderRadius: "2px", width: "fit-content",
+          }}>
+            <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: C.cyan, flexShrink: 0, animation: "pulse-dot 2s infinite" }} />
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.cyan, letterSpacing: "0.12em" }}>
+              aman012/mistral-7b-instruct-v0.3-bnb-4bit-200
+            </span>
+          </div>
+
+          {/* Giant headline */}
+          <div style={{ marginBottom: "32px", lineHeight: 0.88 }}>
+            <div className="fi2" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(52px, 10vw, 124px)", letterSpacing: "-0.025em" }}>
+              SUMMARIZE
+            </div>
+            <div className="fi3" style={{
+              fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(52px, 10vw, 124px)", letterSpacing: "-0.025em",
+              WebkitTextStroke: `2px ${C.cyan}`, WebkitTextFillColor: "transparent", color: "transparent",
+            }}>
+              ANY PDF
+            </div>
+            <div className="fi4" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(52px, 10vw, 124px)", letterSpacing: "-0.025em" }}>
+              WITH AI.
+            </div>
+          </div>
+
+          <p className="fi4" style={{ maxWidth: "480px", lineHeight: 1.75, color: C.muted, fontSize: "15px", fontWeight: 300, marginBottom: "44px" }}>
+            Upload any PDF — research papers, legal docs, textbooks.
+            Mistral 7B reads it in intelligent chunks and streams a
+            comprehensive summary directly to your screen.
+          </p>
+
+          <div className="fi5" style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+            <button className="btn-cta">UPLOAD PDF →</button>
+            <button className="btn-ghost">VIEW HISTORY</button>
+          </div>
+
+          {/* Scroll indicator */}
+          <div style={{ position: "absolute", bottom: "48px", left: "64px", display: "flex", alignItems: "center", gap: "14px" }}>
+            <div style={{ width: "1px", height: "56px", background: `linear-gradient(to bottom, ${C.cyan}, transparent)` }} />
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: "9px", color: C.muted, letterSpacing: "0.2em", writingMode: "vertical-rl", transform: "rotate(180deg)" }}>
+              SCROLL
+            </span>
+          </div>
+        </section>
+
+        {/* ── STATS ── */}
+        <div style={{ padding: "0 64px 100px" }}>
+          <div style={{
+            display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "1px", background: C.border, border: `1px solid ${C.border}`, maxWidth: "860px",
+          }}>
+            {stats.map(s => (
+              <div key={s.l} className="stat-cell">
+                <div className="sv" style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(26px, 3.5vw, 40px)", color: C.white, marginBottom: "6px" }}>{s.v}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.muted, letterSpacing: "0.14em" }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── FEATURES ── */}
+        <section style={{ padding: "80px 64px 100px" }}>
+          <div style={{ marginBottom: "64px" }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.cyan, letterSpacing: "0.24em", marginBottom: "16px" }}>— CAPABILITIES</div>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(32px, 5vw, 62px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}>
+              What it does.
+            </h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1px", background: C.border }}>
+            {features.map(f => (
+              <div key={f.title} className="feat-card">
+                <div className="feat-icon" style={{ fontSize: "26px", color: f.accent, marginBottom: "28px" }}>{f.sym}</div>
+                <h3 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "18px", marginBottom: "14px", letterSpacing: "-0.01em" }}>{f.title}</h3>
+                <p style={{ color: C.muted, lineHeight: 1.72, fontSize: "14px", fontWeight: 300 }}>{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── HOW IT WORKS ── */}
+        <section style={{ padding: "60px 64px 120px" }}>
+          <div style={{ marginBottom: "60px" }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.gold, letterSpacing: "0.24em", marginBottom: "16px" }}>— HOW IT WORKS</div>
+            <h2 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "clamp(32px, 5vw, 62px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}>Three steps.</h2>
+          </div>
+          <div style={{ maxWidth: "920px" }}>
+            {steps.map(s => (
+              <div key={s.n} className="step-row">
+                <span className="step-n" style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: s.accent, letterSpacing: "0.08em", minWidth: "28px", fontWeight: 700 }}>{s.n}</span>
+                <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: "clamp(22px, 3vw, 44px)", flex: 1, letterSpacing: "-0.015em" }}>{s.label}</span>
+                <span style={{ color: C.muted, fontSize: "14px", maxWidth: "320px", fontWeight: 300, lineHeight: 1.65 }}>{s.sub}</span>
+                <div className="step-arrow" style={{
+                  width: "38px", height: "38px", border: `1px solid ${C.border}`, borderRadius: "50%",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  color: C.muted, fontSize: "16px", flexShrink: 0,
+                }}>→</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section style={{ margin: "0 64px 120px" }}>
+          <div style={{
+            padding: "80px 64px", textAlign: "center",
+            background: "linear-gradient(135deg, rgba(0,229,255,0.07) 0%, rgba(240,165,0,0.05) 100%)",
+            border: `1px solid ${C.border}`, borderRadius: "4px",
+            backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+          }}>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.cyan, letterSpacing: "0.24em", marginBottom: "24px" }}>— GET STARTED</div>
+            <h2 style={{
+              fontFamily: "'Syne', sans-serif", fontWeight: 800,
+              fontSize: "clamp(36px, 6vw, 78px)", lineHeight: 0.92, letterSpacing: "-0.025em",
+              marginBottom: "24px",
+            }}>
+              Drop your PDF.<br />
+              <span style={{ color: C.cyan }}>Get a summary.</span>
+            </h2>
+            <p style={{ color: C.muted, fontSize: "15px", maxWidth: "380px", margin: "0 auto 44px", lineHeight: 1.72, fontWeight: 300 }}>
+              Powered by a fine-tuned Mistral 7B model, hosted free on Hugging Face Spaces. No sign-up required.
+            </p>
+            <button className="btn-cta" style={{ padding: "16px 52px", fontSize: "13px" }}>LAUNCH SUMMARIZER →</button>
+          </div>
+        </section>
+
+        {/* ── FOOTER ── */}
+        <footer style={{
+          padding: "36px 64px", borderTop: `1px solid ${C.border}`,
+          display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px",
+        }}>
+          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: "0.08em" }}>
+            <span style={{ color: C.cyan }}>BOTZ</span><span>CODER</span>
+          </div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.muted, letterSpacing: "0.1em" }}>
+            www.botzcoder.com — Built with Mistral AI
+          </div>
+          <div style={{ fontFamily: "'Space Mono', monospace", fontSize: "10px", color: C.muted }}>
+            Next.js · FastAPI · PostgreSQL · HF Spaces
+          </div>
+        </footer>
+
+      </div>
+    </div>
+  );
+}

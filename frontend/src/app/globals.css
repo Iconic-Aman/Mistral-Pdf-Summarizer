@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+
+  *,
+  *::before,
+  *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  ::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  /* Fallback color if needed, but handled by React state inline style mostly */
+  body {
+    overflow-x: hidden;
+  }
+}
+
+@layer utilities {
+  .fi1 {
+    animation: fadeUp .7s ease .05s forwards;
+    opacity: 0;
+  }
+
+  .fi2 {
+    animation: fadeUp .7s ease .18s forwards;
+    opacity: 0;
+  }
+
+  .fi3 {
+    animation: fadeUp .7s ease .30s forwards;
+    opacity: 0;
+  }
+
+  .fi4 {
+    animation: fadeUp .7s ease .42s forwards;
+    opacity: 0;
+  }
+
+  .fi5 {
+    animation: fadeUp .7s ease .54s forwards;
+    opacity: 0;
+  }
+
+  .theme-fade {
+    animation: theme-fade .2s ease forwards;
+  }
+}
+
+@layer components {
+  .feat-card {
+    transition: all .3s ease;
+    cursor: default;
+  }
+
+  .feat-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .step-item {
+    transition: all .2s ease;
+    cursor: default;
+  }
+
+  .step-item:hover .step-label-inner {
+    opacity: 0.55;
+  }
+
+  .stat-item {
+    cursor: default;
+  }
+
+  .nav-link {
+    text-decoration: none;
+    font-family: var(--font-space-mono), monospace;
+    font-size: 10px;
+    letter-spacing: .12em;
+    transition: color .2s;
+  }
+
+  .theme-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all .25s ease;
+    font-size: 15px;
+    background: transparent;
+    flex-shrink: 0;
+  }
+
+  .theme-btn:hover {
+    transform: rotate(18deg) scale(1.08);
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 30px;
+    font-family: var(--font-space-mono), monospace;
+    font-size: 11px;
+    letter-spacing: .12em;
+    cursor: pointer;
+    border: none;
+    border-radius: 2px;
+    transition: all .25s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+  }
+
+  .btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 30px;
+    background: transparent;
+    font-family: var(--font-space-mono), monospace;
+    font-size: 11px;
+    letter-spacing: .12em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all .25s ease;
+  }
+
+  .btn-outline:hover {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes float-y {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes theme-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

@@ -11,7 +11,7 @@ A modern, full-stack portfolio-quality web application that wraps the fine-tuned
 | Layer | Technology | Deployed On | Why |
 |---|---|---|---|
 | **Frontend** | Next.js 14 (React + App Router) | **Vercel** | Native Next.js host, free, auto-deploys on git push |
-| **Styling** | Tailwind CSS + Framer Motion | — | Premium UI, smooth animations |
+| **Styling & 3D** | Tailwind CSS + Framer Motion + Three.js | Premium UI, smooth animations, interactive 3D background |
 | **Backend API** | FastAPI (Python) + Uvicorn | **Render.com** | Free Python hosting; lightweight — no model loaded here |
 | **ML Microservice** | FastAPI (inference only) + Unsloth | **Hugging Face Spaces** | Free GPU/CPU; model is already on HF Hub |
 | **Database** | PostgreSQL | **Neon.tech** | Free forever; Render's free DB deletes after 90 days |
@@ -316,7 +316,7 @@ sequenceDiagram
 
 ## UI Design Concept
 
-> **Theme:** Premium dark UI — deep navy background, vivid violet/indigo gradient accents, glassmorphism cards, Framer Motion animations.
+> **Theme:** Premium dark UI — deep navy background, vivid violet/indigo gradient accents, glassmorphism cards, Framer Motion animations, and an interactive **Three.js animated 3D wireframe background**.
 
 | Screen | Key UI Elements |
 |---|---|

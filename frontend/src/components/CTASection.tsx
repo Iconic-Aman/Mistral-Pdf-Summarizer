@@ -13,10 +13,10 @@ export default function CTASection({ T, dark, user, setShowLogin }: { T: Theme; 
                 borderRadius: "4px",
                 transition: "background .35s, border-color .35s",
             }}>
-                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold, letterSpacing: ".22em", marginBottom: "20px" }}>
+                <div style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.gold, letterSpacing: ".22em", marginBottom: "20px" }}>
                     — GET STARTED
                 </div>
-                <h2 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(30px,5vw,62px)", lineHeight: .95, letterSpacing: "-.025em", color: dark ? "#f0ece4" : "#f5f3ef", marginBottom: "20px" }}>
+                <h2 style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "clamp(30px,5vw,62px)", lineHeight: .95, letterSpacing: "-.025em", color: dark ? "#f0ece4" : "#f5f3ef", marginBottom: "20px" }}>
                     Drop your PDF.<br />
                     <span style={{ color: T.gold }}>Get a summary.</span>
                 </h2>

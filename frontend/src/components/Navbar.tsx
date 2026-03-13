@@ -21,7 +21,7 @@ export default function Navbar({
             borderBottom: `1px solid ${T.border}`,
             transition: "background .35s, border-color .35s",
         }}>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em" }}>
+            <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em" }}>
                 <span style={{ color: T.gold }}>BOTZ</span>
                 <span style={{ color: T.ink }}>CODER</span>
             </div>
@@ -57,7 +57,7 @@ export default function Navbar({
                             <div className="avatar-circle" style={{ background: dark ? "#2e2a1e" : "#f0e8d5", color: T.gold, border: `1.5px solid ${T.gold}` }}>
                                 {user.avatar}
                             </div>
-                            <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.ink, letterSpacing: ".06em", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.ink, letterSpacing: ".06em", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {user.name.split(" ")[0].toUpperCase()}
                             </span>
                             <span style={{ color: T.muted, fontSize: "10px" }}>▾</span>
@@ -66,8 +66,8 @@ export default function Navbar({
                         {showDropdown && (
                             <div className="dropdown" style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.cardHover }}>
                                 <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.border}` }}>
-                                    <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "13px", color: T.ink, marginBottom: "2px" }}>{user.name}</div>
-                                    <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted }}>{user.email}</div>
+                                    <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 700, fontSize: "13px", color: T.ink, marginBottom: "2px" }}>{user.name}</div>
+                                    <div style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.muted }}>{user.email}</div>
                                 </div>
                                 {[["◈ My summaries", () => { }], ["⬡ Upload PDF", () => { }], ["◎ Account settings", () => { }]].map(([label, fn]) => (
                                     <button key={label as string} className="dropdown-item" onClick={fn as () => void}

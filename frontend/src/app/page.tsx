@@ -8,7 +8,6 @@ import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
 import FeaturesSection from "@/components/FeaturesSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
-import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -94,10 +93,10 @@ export default function Home() {
 
               {/* Modal header */}
               <div style={{ padding: "32px 36px 0" }}>
-                <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em", marginBottom: "24px" }}>
+                <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em", marginBottom: "24px" }}>
                   <span style={{ color: T.gold }}>BOTZ</span><span style={{ color: T.ink }}>CODER</span>
                 </div>
-                <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "22px", letterSpacing: "-.01em", marginBottom: "8px", color: T.ink }}>
+                <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 700, fontSize: "22px", letterSpacing: "-.01em", marginBottom: "8px", color: T.ink }}>
                   Sign in to continue
                 </div>
                 <p style={{ fontSize: "14px", color: T.muted, lineHeight: 1.65, fontWeight: 300, marginBottom: "28px" }}>
@@ -110,7 +109,7 @@ export default function Home() {
                 <button className="google-btn" onClick={handleGoogleLogin} disabled={loginLoading}
                   style={{ background: dark ? "#1c1a15" : "#fff", border: `1px solid ${T.border}`, color: T.ink }}>
                   {loginLoading ? (
-                    <><div className="spinner" /><span style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: ".08em" }}>SIGNING IN...</span></>
+                    <><div className="spinner" /><span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "11px", letterSpacing: ".08em" }}>SIGNING IN...</span></>
                   ) : (
                     <>
                       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -126,12 +125,12 @@ export default function Home() {
 
                 <div style={{ display: "flex", alignItems: "center", gap: "12px", margin: "20px 0" }}>
                   <div style={{ flex: 1, height: "1px", background: T.border }} />
-                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".1em" }}>OR</span>
+                  <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.muted, letterSpacing: ".1em" }}>OR</span>
                   <div style={{ flex: 1, height: "1px", background: T.border }} />
                 </div>
 
                 {/* Email placeholder */}
-                <div style={{ width: "100%", padding: "12px 16px", borderRadius: "3px", border: `1px solid ${T.border}`, background: dark ? "#141210" : "#faf9f7", fontFamily: "'Space Mono',monospace", fontSize: "11px", color: T.muted, letterSpacing: ".06em", marginBottom: "10px" }}>
+                <div style={{ width: "100%", padding: "12px 16px", borderRadius: "3px", border: `1px solid ${T.border}`, background: dark ? "#141210" : "#faf9f7", fontFamily: "var(--font-space-mono), monospace", fontSize: "11px", color: T.muted, letterSpacing: ".06em", marginBottom: "10px" }}>
                   Email — coming soon
                 </div>
 
@@ -154,7 +153,6 @@ export default function Home() {
         <StatsSection T={T} />
         <FeaturesSection T={T} />
         <HowItWorksSection T={T} />
-        <CTASection T={T} dark={dark} user={user} setShowLogin={setShowLogin} />
         <Footer T={T} />
       </div>
     </div>

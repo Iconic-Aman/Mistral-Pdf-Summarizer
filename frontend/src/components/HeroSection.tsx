@@ -13,19 +13,19 @@ export default function HeroSection({ T, dark, user, setShowLogin }: { T: Theme;
                 transition: "background .35s, border-color .35s",
             }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.gold, animation: "blink 2s infinite", flexShrink: 0 }} />
-                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold, letterSpacing: ".1em" }}>
+                <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.gold, letterSpacing: ".1em" }}>
                     aman012/mistral-7b-instruct-v0.3-bnb-4bit-200
                 </span>
             </div>
 
             <div style={{ marginBottom: "28px" }}>
-                <div className="fi2" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(48px,9vw,108px)", letterSpacing: "-.03em", lineHeight: .9, color: T.ink, transition: "color .35s" }}>
+                <div className="fi2" style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "clamp(48px,9vw,108px)", letterSpacing: "-.03em", lineHeight: .9, color: T.ink, transition: "color .35s" }}>
                     SUMMARIZE
                 </div>
-                <div className="fi3" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(48px,9vw,108px)", letterSpacing: "-.03em", lineHeight: .9, WebkitTextStroke: `1.5px ${T.gold}`, color: "transparent", WebkitTextFillColor: "transparent", transition: "all .35s" }}>
+                <div className="fi3" style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "clamp(48px,9vw,108px)", letterSpacing: "-.03em", lineHeight: .9, WebkitTextStroke: `1.5px ${T.gold}`, color: "transparent", WebkitTextFillColor: "transparent", transition: "all .35s" }}>
                     ANY PDF
                 </div>
-                <div className="fi4" style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(48px,9vw,108px)", letterSpacing: "-.03em", lineHeight: .9, color: T.ink, transition: "color .35s" }}>
+                <div className="fi4" style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "clamp(48px,9vw,108px)", letterSpacing: "-.03em", lineHeight: .9, color: T.ink, transition: "color .35s" }}>
                     WITH AI.
                 </div>
             </div>
@@ -68,7 +68,7 @@ export default function HeroSection({ T, dark, user, setShowLogin }: { T: Theme;
             {user && (
                 <div className="fi5" style={{ marginTop: "28px", display: "inline-flex", alignItems: "center", gap: "10px", padding: "8px 16px", background: dark ? "#1c1a15" : "#fff", border: `1px solid ${T.border}`, borderRadius: "3px", width: "fit-content" }}>
                     <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#22c55e" }} />
-                    <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".08em" }}>
+                    <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.muted, letterSpacing: ".08em" }}>
                         Signed in as <span style={{ color: T.gold }}>{user.email}</span>
                     </span>
                 </div>

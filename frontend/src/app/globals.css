@@ -142,6 +142,95 @@
   .btn-outline:hover {
     transform: translateY(-2px);
   }
+
+  .google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 13px 20px;
+    background: #fff;
+    border: 1px solid #e0ddd8;
+    border-radius: 3px;
+    font-family: var(--font-space-mono), monospace;
+    font-size: 11px;
+    letter-spacing: .08em;
+    cursor: pointer;
+    color: #3c3830;
+    transition: all .25s ease;
+  }
+
+  .google-btn:hover {
+    background: #f8f6f2;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .google-btn:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(200, 134, 26, .2);
+    border-top-color: #c8861a;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  .avatar-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+    position: relative;
+  }
+
+  .avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-space-mono), monospace;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    min-width: 200px;
+    border-radius: 4px;
+    overflow: hidden;
+    z-index: 200;
+    animation: modal-in .18s ease forwards;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s;
+    font-family: var(--font-dm-sans), sans-serif;
+    border: none;
+    width: 100%;
+    text-align: left;
+  }
 }
 
 @keyframes fadeUp {
@@ -187,6 +276,34 @@
 }
 
 @keyframes theme-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes overlay-in {
   from {
     opacity: 0;
   }

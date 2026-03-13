@@ -15,9 +15,10 @@ export const LIGHT = {
     glow: "rgba(200,134,26,0.08)",
     scrollBg: "#c8c4bc",
     cardHover: "0 12px 40px rgba(0,0,0,0.07)",
+    overlay: "rgba(26,23,20,0.55)",
 };
 
-export const DARK = {
+export const DARK: Theme = {
     bg: "#111009",
     surface: "#1c1a15",
     ink: "#f0ece4",
@@ -34,6 +35,15 @@ export const DARK = {
     glow: "rgba(224,155,42,0.06)",
     scrollBg: "#3a3628",
     cardHover: "0 12px 40px rgba(0,0,0,0.4)",
+    overlay: "rgba(0,0,0,0.72)",
 };
+
+export interface User {
+    name: string;
+    email: string;
+    avatar: string;
+}
+
+export const MOCK_USER: User = { name: "Aman Gupta", email: "aman@humanizeiq.ai", avatar: "AG" };
 
 export type Theme = typeof LIGHT;

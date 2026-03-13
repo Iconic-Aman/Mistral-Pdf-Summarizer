@@ -20,10 +20,10 @@ export default function StatsSection({ T }: { T: Theme }) {
             }}>
                 {stats.map((s, i) => (
                     <div key={s.l} className="stat-item" style={{ padding: "28px 20px", textAlign: "center", borderRight: i < 3 ? `1px solid ${T.border}` : "none", transition: "border-color .35s" }}>
-                        <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(22px,3vw,36px)", color: T.ink, marginBottom: "5px", transition: "color .35s" }}>
+                        <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "clamp(22px,3vw,36px)", color: T.ink, marginBottom: "5px", transition: "color .35s" }}>
                             {s.v}
                         </div>
-                        <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".12em", transition: "color .35s" }}>
+                        <div style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.muted, letterSpacing: ".12em", transition: "color .35s" }}>
                             {s.l}
                         </div>
                     </div>

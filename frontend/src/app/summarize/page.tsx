@@ -27,33 +27,113 @@ export default function SummarizePage() {
     const streamRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const chunkRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+    const [uploadProgress, setUploadProgress] = useState(0);
+
     const handleLogout = () => { logout(); setShowDropdown(false); };
 
-    const startMockProcess = useCallback(() => {
-        setPhase("uploading"); setStreamedText(""); setCurrentChunk(0);
-        setTimeout(() => {
+    const startRealProcess = useCallback(async () => {
+        if (!file || !user) return;
+        setPhase("uploading");
+        setUploadProgress(0);
+        setStreamedText("");
+        setCurrentChunk(0);
+
+        try {
+            // 1. UPLOAD PHASE (Browser -> FastAPI -> R2)
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const xhr = new XMLHttpRequest();
+            const uploadPromise = new Promise<{ job_id: string }>((resolve, reject) => {
+                xhr.upload.addEventListener("progress", (e) => {
+                    if (e.lengthComputable) {
+                        const percent = Math.round((e.loaded / e.total) * 100);
+                        setUploadProgress(percent);
+                    }
+                });
+
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState === 4) {
+                        if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+                        else reject(new Error("Upload failed"));
+                    }
+                };
+                xhr.onerror = () => reject(new Error("Network error"));
+
+                xhr.open("POST", "http://localhost:8000/api/v1/upload-file/");
+                if (user.idToken) xhr.setRequestHeader("Authorization", `Bearer ${user.idToken}`);
+                xhr.send(formData);
+            });
+
+            const { job_id } = await uploadPromise;
+
+            // 2. START SUMMARIZATION PHASE
             setPhase("processing");
+            const startRes = await fetch(`http://localhost:8000/api/v1/summarize/start/${job_id}`, {
+                method: "POST",
+                headers: {
+                    "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
+                }
+            });
+
+            if (!startRes.ok) throw new Error("Failed to start summarization");
+
+            // 3. POLLING FOR COMPLETION
+            // We'll visually cycle through chunks while polling the real status
             let chunk = 0;
             chunkRef.current = setInterval(() => {
-                chunk++;
-                setCurrentChunk(chunk);
-                if (chunk >= TOTAL_CHUNKS) {
-                    clearInterval(chunkRef.current!);
-                    let i = 0;
-                    streamRef.current = setInterval(() => {
-                        i += Math.floor(Math.random() * 4) + 2;
-                        if (i >= MOCK_SUMMARY.length) {
-                            i = MOCK_SUMMARY.length;
-                            clearInterval(streamRef.current!);
-                            setPhase("done");
-                            setJobMeta({ chunks: TOTAL_CHUNKS, tokens: 1842, time: "2m 34s" });
-                        }
-                        setStreamedText(MOCK_SUMMARY.slice(0, i));
-                    }, 28);
+                if (chunk < TOTAL_CHUNKS - 1) {
+                    chunk++;
+                    setCurrentChunk(chunk);
                 }
-            }, 900);
-        }, 1200);
-    }, []);
+            }, 1200);
+
+            const pollStatus = async () => {
+                try {
+                    const statusRes = await fetch(`http://localhost:8000/api/v1/summarize/status/${job_id}`, {
+                        headers: {
+                            "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
+                        }
+                    });
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === "completed") {
+                        clearInterval(chunkRef.current!);
+                        setCurrentChunk(TOTAL_CHUNKS);
+
+                        // Fake stream the real result for that premium feel
+                        const realSummary = statusData.summary;
+                        let i = 0;
+                        streamRef.current = setInterval(() => {
+                            i += Math.floor(Math.random() * 4) + 2;
+                            if (i >= realSummary.length) {
+                                i = realSummary.length;
+                                clearInterval(streamRef.current!);
+                                setPhase("done");
+                                setJobMeta({ chunks: TOTAL_CHUNKS, tokens: 150, time: "Real Job" });
+                            }
+                            setStreamedText(realSummary.slice(0, i));
+                        }, 20);
+                        return true; // Stop polling
+                    }
+                    return false;
+                } catch (e) {
+                    console.error("Polling error", e);
+                    return false;
+                }
+            };
+
+            const pollInterval = setInterval(async () => {
+                const isDone = await pollStatus();
+                if (isDone) clearInterval(pollInterval);
+            }, 2000);
+
+        } catch (err) {
+            console.error(err);
+            setPhase("idle");
+            alert("Upload failed. Make sure the backend is running at :8000");
+        }
+    }, [file, user]);
 
     const reset = () => {
         clearInterval(streamRef.current!); clearInterval(chunkRef.current!);
@@ -62,7 +142,7 @@ export default function SummarizePage() {
 
     useEffect(() => () => { clearInterval(streamRef.current!); clearInterval(chunkRef.current!); }, []);
 
-    const progressPct = phase === "uploading" ? 12
+    const progressPct = phase === "uploading" ? uploadProgress
         : phase === "processing" ? Math.round((currentChunk / TOTAL_CHUNKS) * 88) + 12
             : phase === "done" ? 100 : 0;
 
@@ -93,7 +173,7 @@ export default function SummarizePage() {
                     onFile={f => { setFile(f); setPhase("idle"); setStreamedText(""); setJobMeta(null); }}
                     onDragOver={() => setDragging(true)} onDragLeave={() => setDragging(false)}
                     onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f?.type === "application/pdf") { setFile(f); setPhase("idle"); } }}
-                    onStart={startMockProcess} onReset={reset} />
+                    onStart={startRealProcess} onReset={reset} />
                 <SummaryOutput T={T} dark={dark} phase={phase} streamedText={streamedText} file={file} />
             </div>
         </div>

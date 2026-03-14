@@ -36,7 +36,6 @@ export function useAuth() {
 
     const isLoading = status === "loading";
 
-
     return {
         user,
         isLoading,

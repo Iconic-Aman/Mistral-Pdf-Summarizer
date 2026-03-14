@@ -47,6 +47,10 @@ const handler = NextAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         }),
     ],
+    session: {
+        strategy: "jwt",
+        maxAge: 12 * 60 * 60, // 12 hours
+    },
     callbacks: {
         async jwt({ token, account }) {
             // Persist the id_token to send to your backend (optional)
@@ -54,11 +58,14 @@ const handler = NextAuth({
             return token;
         },
         async session({ session, token }) {
-            // Expose the id_token on the session (optional)
-            (session as any).idToken = token.idToken;
+            // Expose the id_token on the session object type-safely
+            if (token.idToken) {
+                (session as { idToken?: string }).idToken = token.idToken as string;
+            }
             return session;
         },
     },
+    secret: process.env.NEXTAUTH_SECRET,
 });
 
 export { handler as GET, handler as POST };
@@ -84,13 +91,21 @@ export function Providers({ children }: { children: React.ReactNode }) {
 ## Step 5: Wrap Your App with the Provider
 
 **File path:** `src/app/layout.tsx`
-Add these two lines:
+Add these lines:
 
 ```typescript
 import { Providers } from "./providers";
 
 // Inside the return, wrap {children}:
-<Providers>{children}</Providers>
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
 ```
 
 ---
@@ -109,15 +124,25 @@ export interface AuthUser {
     idToken?: string;
 }
 
+interface CustomSession {
+    user?: {
+        name?: string | null;
+        email?: string | null;
+        image?: string | null;
+    };
+    idToken?: string;
+}
+
 export function useAuth() {
-    const { data: session, status } = useSession();
+    const { data, status } = useSession();
+    const session = data as CustomSession;
 
     const user: AuthUser | null = session?.user
         ? {
             name: session.user.name ?? "",
             email: session.user.email ?? "",
             avatar: session.user.image ?? "",
-            idToken: (session as any).idToken,
+            idToken: session.idToken,
         }
         : null;
 
@@ -145,7 +170,8 @@ export default function MyPage() {
 
     return user ? (
         <div>
-            <img src={user.avatar} alt={user.name} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={user.avatar} alt={user.name} style={{ width: 40, height: 40, borderRadius: '50%' }} />
             <p>Welcome, {user.name}!</p>
             <button onClick={logout}>Sign Out</button>
         </div>
@@ -182,21 +208,3 @@ src/
     └── useAuth.ts                 ← Step 6 (the reusable hook)
 .env.local                         ← Step 2
 ```
-
----
-
-## Optional: Sending `idToken` to a FastAPI Backend
-
-If you have a backend, pass the token like this from any component:
-
-```typescript
-const { user } = useAuth();
-
-const response = await fetch("https://api.yoursite.com/api/v1/me", {
-    headers: {
-        Authorization: `Bearer ${user?.idToken}`,
-    },
-});
-```
-
-The backend's `get_current_user()` middleware will verify this token automatically.

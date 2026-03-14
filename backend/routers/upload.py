@@ -34,11 +34,14 @@ async def upload_pdf(
     extension = os.path.splitext(file.filename)[1]
     r2_key = f"uploads/{current_user.id}/{job_id}{extension}"
 
-    # 3. Save locally temporarily to upload (FastAPI UploadFile approach)
-    temp_path = f"/tmp/{job_id}{extension}"
-    # Ensure /tmp exists (standard on Linux/Render)
-    if not os.path.exists("/tmp"):
-        os.makedirs("/tmp")
+    # 3. Save locally temporarily to upload
+    # Using a relative tmp folder to work on Windows and Linux
+    tmp_dir = "tmp"
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+    
+    temp_path = os.path.join(tmp_dir, f"{job_id}{extension}")
+
 
     try:
         with open(temp_path, "wb") as buffer:

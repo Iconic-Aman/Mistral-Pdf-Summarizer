@@ -13,7 +13,8 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 
 from backend.middleware.auth import get_current_user
 from backend.models.db_models import User
-from backend.routers import upload
+from backend.routers import upload, summarize
+
 
 app = FastAPI(
     title="Mistral PDF Summarizer API",
@@ -23,6 +24,8 @@ app = FastAPI(
 
 # Include Routers
 app.include_router(upload.router)
+app.include_router(summarize.router)
+
 
 
 

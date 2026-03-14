@@ -58,6 +58,7 @@ export default function Navbar({
                         <button className="avatar-btn" onClick={() => setShowDropdown(!showDropdown)}>
                             <div className="avatar-circle" style={{ background: dark ? "#2e2a1e" : "#f0e8d5", color: T.gold, border: `1.5px solid ${T.gold}`, overflow: "hidden" }}>
                                 {user.avatar?.startsWith("http") ? (
+                                    /* eslint-disable-next-line @next/next/no-img-element */
                                     <img src={user.avatar} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                 ) : (
                                     user.avatar || user.name.charAt(0).toUpperCase()

@@ -21,9 +21,12 @@ const handler = NextAuth({
         },
         async session({ session, token }) {
             // Expose the id_token on the session object
-            (session as any).idToken = token.idToken;
+            if (token.idToken) {
+                (session as { idToken?: string }).idToken = token.idToken as string;
+            }
             return session;
         },
+
     },
     // Required for Next.js 14+ on some providers
     secret: process.env.NEXTAUTH_SECRET,

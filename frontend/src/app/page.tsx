@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LIGHT, DARK, MOCK_USER, User } from "@/lib/constants";
+import { LIGHT, DARK } from "@/lib/constants";
 import BackgroundShapes from "@/components/BackgroundShapes";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";

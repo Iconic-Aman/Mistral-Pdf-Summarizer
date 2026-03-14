@@ -11,7 +11,7 @@ build/
 .env.development.local
 .env.test.local
 .env.production.local
-Information.md
+Learning/
 
 # npm/yarn/pnpm debugging logs
 npm-debug.log*

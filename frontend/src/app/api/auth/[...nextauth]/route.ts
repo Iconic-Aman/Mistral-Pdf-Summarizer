@@ -8,6 +8,11 @@ const handler = NextAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
         }),
     ],
+    session: {
+        strategy: "jwt",
+        maxAge: 12 * 60 * 60, // 12 hours
+    },
+
     callbacks: {
         async jwt({ token, account }) {
             // Persist the id_token to send to your backend

@@ -17,17 +17,20 @@ if DATABASE_URL:
 else:
     ASYNC_DATABASE_URL = DATABASE_URL
 
+from sqlalchemy.pool import NullPool
+
 # For Neon, we need SSL. asyncpg uses ssl=True by default in many asyncpg clients,
 # but in SQLAlchemy we can pass connect_args.
-# We also limit pool size to prevent [WinError 10055] on Windows
+# We use NullPool for local development on Windows to prevent socket/connection leaks
+# and handle Neon's serverless connection termination and handle [WinError 10055]
 engine = create_async_engine(
     ASYNC_DATABASE_URL,
     echo=True,
     connect_args={"ssl": True},
-    pool_size=5,
-    max_overflow=0,
-    pool_recycle=3600,
+    poolclass=NullPool,
+    pool_pre_ping=True
 )
+
 
 AsyncSessionLocal = sessionmaker(
     bind=engine,

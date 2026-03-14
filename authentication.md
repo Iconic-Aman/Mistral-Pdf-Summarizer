@@ -11,16 +11,31 @@ The application uses a **Dual-Verification System** for API security. The FastAP
 
 ```mermaid
 flowchart TD
-    Start([API Request Received]) --> AuthHeader{Check Auth Header}
-    AuthHeader -- "Bearer API_KEY" --> SysAdmin[Return System Admin Object]
-    AuthHeader -- "Bearer Google Token" --> GoogleVerify{Verify with Google}
-
-    GoogleVerify -- "Valid" --> DBCheck{User in DB?}
+    Start([API Request Received]) --> AuthHeader{Auth Header Type}
+    
+    %% Authentication Phase
+    AuthHeader -- "Bearer API_KEY" --> SysAuth[Identify as System Admin]
+    AuthHeader -- "Bearer ID_TOKEN" --> GoogleVerify{Verify with Google}
+    
+    GoogleVerify -- "Valid" --> UserLookup{User in DB?}
     GoogleVerify -- "Invalid" --> Fail([401 Unauthorized])
-
-    DBCheck -- "No" --> CreateUser[Create User in Neon DB]
-    DBCheck -- "Yes" --> Success
-    CreateUser --> Success([Return DB User Object])
+    
+    UserLookup -- "No" --> CreateUser[Auto-Provision User]
+    UserLookup -- "Yes" --> UserFound[Identify as Google User]
+    CreateUser --> UserFound
+    
+    %% Post-Authentication Action (Example: Upload)
+    SysAuth & UserFound --> Endpoint[Execute API Endpoint]
+    
+    Endpoint --> UploadLogic{If Action is 'Upload'}
+    UploadLogic --> R2[(Cloudflare R2 Storage)]
+    
+    R2 --> Persistence{User Type?}
+    Persistence -- "System Admin" --> Bypass[Bypass DB Save]
+    Persistence -- "Google User" --> Neon[(Neon PostgreSQL DB)]
+    
+    Bypass --> Success([Return Success])
+    Neon --> Success
 ```
 
 ---

@@ -13,12 +13,20 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 
 from backend.middleware.auth import get_current_user
 from backend.models.db_models import User
+from backend.routers import upload, summarize
+
 
 app = FastAPI(
     title="Mistral PDF Summarizer API",
     description="Backend for botzcoder.com",
     version="1.0.0",
 )
+
+# Include Routers
+app.include_router(upload.router)
+app.include_router(summarize.router)
+
+
 
 
 

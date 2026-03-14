@@ -10,30 +10,28 @@ import FeaturesSection from "@/components/FeaturesSection";
 import HowItWorksSection from "@/components/HowItWorksSection";
 import Footer from "@/components/Footer";
 
+import { useAuth } from "@/lib/useAuth";
+
 export default function Home() {
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
   const [dark, setDark] = useState(false);
   const [toggling, setToggling] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [loginLoading, setLoginLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  const { user, login, logout, isLoading: loginLoading } = useAuth();
 
   const T = dark ? DARK : LIGHT;
 
-  const handleGoogleLogin = () => {
-    setLoginLoading(true);
-    setTimeout(() => {
-      setUser(MOCK_USER);
-      setLoginLoading(false);
-      setShowLogin(false);
-    }, 1800);
+  const handleGoogleLogin = async () => {
+    await login();
   };
 
   const handleLogout = () => {
-    setUser(null);
+    logout();
     setShowDropdown(false);
   };
+
 
   const toggle = () => {
     setToggling(true);

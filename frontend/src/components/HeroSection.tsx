@@ -1,9 +1,11 @@
 "use client";
 
-import { Theme, User } from "@/lib/constants";
+import { Theme } from "@/lib/constants";
+import { AuthUser } from "@/lib/useAuth";
 import Link from "next/link";
 
-export default function HeroSection({ T, dark, user, setShowLogin }: { T: Theme; dark: boolean; user: User | null; setShowLogin: (b: boolean) => void; }) {
+export default function HeroSection({ T, dark, user, setShowLogin }: { T: Theme; dark: boolean; user: AuthUser | null; setShowLogin: (b: boolean) => void; }) {
+
     return (
         <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "120px 64px 80px" }}>
             <div className="fi1" style={{

@@ -25,6 +25,8 @@ export const metadata: Metadata = {
   description: "Summarize any PDF using Aman's fine-tuned Mistral 7B.",
 };
 
+import { Providers } from "./providers";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,8 +35,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${syne.variable} ${spaceMono.variable} ${dmSans.variable} font-dm-sans relative text-[#f0f0f0]`}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
+

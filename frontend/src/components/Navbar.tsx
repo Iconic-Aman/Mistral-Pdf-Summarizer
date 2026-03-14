@@ -1,6 +1,7 @@
 "use client";
 
-import { Theme, User } from "@/lib/constants";
+import { Theme } from "@/lib/constants";
+import { AuthUser } from "@/lib/useAuth";
 import Link from "next/link";
 
 export default function Navbar({
@@ -8,9 +9,10 @@ export default function Navbar({
     user, showDropdown, setShowDropdown, handleLogout, setShowLogin
 }: {
     T: Theme; dark: boolean; toggle: () => void;
-    user: User | null; showDropdown: boolean; setShowDropdown: (b: boolean) => void;
+    user: AuthUser | null; showDropdown: boolean; setShowDropdown: (b: boolean) => void;
     handleLogout: () => void; setShowLogin: (b: boolean) => void;
 }) {
+
     return (
         <nav style={{
             position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
@@ -54,9 +56,14 @@ export default function Navbar({
                 {user ? (
                     <div style={{ position: "relative" }}>
                         <button className="avatar-btn" onClick={() => setShowDropdown(!showDropdown)}>
-                            <div className="avatar-circle" style={{ background: dark ? "#2e2a1e" : "#f0e8d5", color: T.gold, border: `1.5px solid ${T.gold}` }}>
-                                {user.avatar}
+                            <div className="avatar-circle" style={{ background: dark ? "#2e2a1e" : "#f0e8d5", color: T.gold, border: `1.5px solid ${T.gold}`, overflow: "hidden" }}>
+                                {user.avatar?.startsWith("http") ? (
+                                    <img src={user.avatar} alt={user.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                ) : (
+                                    user.avatar || user.name.charAt(0).toUpperCase()
+                                )}
                             </div>
+
                             <span style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.ink, letterSpacing: ".06em", maxWidth: "100px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                 {user.name.split(" ")[0].toUpperCase()}
                             </span>

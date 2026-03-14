@@ -19,11 +19,16 @@ else:
 
 # For Neon, we need SSL. asyncpg uses ssl=True by default in many asyncpg clients,
 # but in SQLAlchemy we can pass connect_args.
+# We also limit pool size to prevent [WinError 10055] on Windows
 engine = create_async_engine(
     ASYNC_DATABASE_URL,
     echo=True,
-    connect_args={"ssl": True}
+    connect_args={"ssl": True},
+    pool_size=5,
+    max_overflow=0,
+    pool_recycle=3600,
 )
+
 AsyncSessionLocal = sessionmaker(
     bind=engine,
     class_=AsyncSession,

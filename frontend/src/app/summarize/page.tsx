@@ -56,7 +56,8 @@ export default function SummarizePage() {
                 };
                 xhr.onerror = () => reject(new Error("Network error"));
 
-                xhr.open("POST", "http://localhost:8000/api/v1/upload-file/");
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+                xhr.open("POST", `${apiUrl}/api/v1/upload-file/`);
                 if (user.idToken) xhr.setRequestHeader("Authorization", `Bearer ${user.idToken}`);
                 xhr.send(formData);
             });
@@ -65,7 +66,8 @@ export default function SummarizePage() {
 
             // 2. START SUMMARIZATION PHASE
             setPhase("processing");
-            const startRes = await fetch(`http://localhost:8000/api/v1/summarize/start/${job_id}`, {
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            const startRes = await fetch(`${apiUrl}/api/v1/summarize/start/${job_id}`, {
                 method: "POST",
                 headers: {
                     "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
@@ -82,11 +84,12 @@ export default function SummarizePage() {
                     chunk++;
                     setCurrentChunk(chunk);
                 }
-            }, 1200);
+            }, 600);
 
             const pollStatus = async () => {
                 try {
-                    const statusRes = await fetch(`http://localhost:8000/api/v1/summarize/status/${job_id}`, {
+                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+                    const statusRes = await fetch(`${apiUrl}/api/v1/summarize/status/${job_id}`, {
                         headers: {
                             "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
                         }
@@ -127,7 +130,8 @@ export default function SummarizePage() {
         } catch (err) {
             console.error(err);
             setPhase("idle");
-            alert("Upload failed. Make sure the backend is running at :8000");
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            alert(`Upload failed. Make sure the backend is running at ${apiUrl}`);
         }
     }, [file, user]);
 

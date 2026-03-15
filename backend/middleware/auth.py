@@ -50,5 +50,6 @@ async def get_current_user(token: HTTPAuthorizationCredentials = Depends(securit
             return user
 
     except Exception as e:
+        print(f"Auth Error: {str(e)}")
         raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
 

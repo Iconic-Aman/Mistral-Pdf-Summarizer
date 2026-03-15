@@ -6,11 +6,7 @@ import SummaryOutput from "@/components/SummaryOutput";
 import { useAuth } from "@/lib/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 
-const MOCK_SUMMARY = `This document presents a comprehensive analysis of transformer-based language models and their applications in natural language processing tasks.
-
-The key contributions include: (1) a sparse attention pattern that scales linearly with sequence length, (2) a novel positional encoding scheme that generalizes to longer sequences than seen during training, and (3) empirical evaluation across seven benchmark datasets.
-
-Experimental results show a 34% reduction in inference time compared to standard full-attention transformers, with only a 1.2% drop in accuracy on the GLUE benchmark. The model achieves 91.4 on SuperGLUE, surpassing previous best results by 2.1 points.`;
+// MOCK_SUMMARY removed
 
 export default function SummarizePage() {
     const { dark, toggling, T, toggle } = useTheme();

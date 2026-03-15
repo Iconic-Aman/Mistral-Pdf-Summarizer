@@ -5,6 +5,7 @@ import UploadZone from "@/components/UploadZone";
 import SummaryOutput from "@/components/SummaryOutput";
 import { useAuth } from "@/lib/useAuth";
 import { useTheme } from "@/context/ThemeContext";
+import { API_BASE_URL } from "@/lib/constants";
 
 // MOCK_SUMMARY removed
 
@@ -56,7 +57,7 @@ export default function SummarizePage() {
                 };
                 xhr.onerror = () => reject(new Error("Network error"));
 
-                xhr.open("POST", "http://localhost:8000/api/v1/upload-file/");
+                xhr.open("POST", `${API_BASE_URL}/api/v1/upload-file/`);
                 if (user.idToken) xhr.setRequestHeader("Authorization", `Bearer ${user.idToken}`);
                 xhr.send(formData);
             });
@@ -65,7 +66,7 @@ export default function SummarizePage() {
 
             // 2. START SUMMARIZATION PHASE
             setPhase("processing");
-            const startRes = await fetch(`http://localhost:8000/api/v1/summarize/start/${job_id}`, {
+            const startRes = await fetch(`${API_BASE_URL}/api/v1/summarize/start/${job_id}`, {
                 method: "POST",
                 headers: {
                     "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
@@ -82,11 +83,11 @@ export default function SummarizePage() {
                     chunk++;
                     setCurrentChunk(chunk);
                 }
-            }, 1200);
+            }, 600);
 
             const pollStatus = async () => {
                 try {
-                    const statusRes = await fetch(`http://localhost:8000/api/v1/summarize/status/${job_id}`, {
+                    const statusRes = await fetch(`${API_BASE_URL}/api/v1/summarize/status/${job_id}`, {
                         headers: {
                             "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
                         }
@@ -127,7 +128,7 @@ export default function SummarizePage() {
         } catch (err) {
             console.error(err);
             setPhase("idle");
-            alert("Upload failed. Make sure the backend is running at :8000");
+            alert(`Upload failed. Make sure the backend is running at ${API_BASE_URL}`);
         }
     }, [file, user]);
 

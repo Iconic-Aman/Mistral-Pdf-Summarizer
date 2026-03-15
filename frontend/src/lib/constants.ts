@@ -47,3 +47,5 @@ export interface User {
 export const MOCK_USER: User = { name: "Aman Gupta", email: "aman@humanizeiq.ai", avatar: "AG" };
 
 export type Theme = typeof LIGHT;
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";

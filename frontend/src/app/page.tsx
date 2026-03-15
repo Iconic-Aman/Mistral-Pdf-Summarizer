@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { LIGHT, DARK } from "@/lib/constants";
+import { useTheme } from "@/context/ThemeContext";
 import BackgroundShapes from "@/components/BackgroundShapes";
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/HeroSection";
@@ -14,14 +14,10 @@ import { useAuth } from "@/lib/useAuth";
 
 export default function Home() {
   const [mouse, setMouse] = useState({ x: 0, y: 0 });
-  const [dark, setDark] = useState(false);
-  const [toggling, setToggling] = useState(false);
+  const { user, login, logout, isLoading: loginLoading } = useAuth();
+  const { dark, T, toggle, toggling } = useTheme();
   const [showLogin, setShowLogin] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-
-  const { user, login, logout, isLoading: loginLoading } = useAuth();
-
-  const T = dark ? DARK : LIGHT;
 
   const handleGoogleLogin = async () => {
     await login();
@@ -33,13 +29,7 @@ export default function Home() {
   };
 
 
-  const toggle = () => {
-    setToggling(true);
-    setTimeout(() => {
-      setDark(d => !d);
-      setToggling(false);
-    }, 180);
-  };
+  // Toggled via context now
 
   useEffect(() => {
     const onMove = (e: MouseEvent) => setMouse({ x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight });
@@ -79,7 +69,7 @@ export default function Home() {
       <div style={{ position: "relative", zIndex: 1 }}>
         <Navbar
           T={T} dark={dark} toggle={toggle}
-          user={user}
+          user={user} isLoading={loginLoading}
           showDropdown={showDropdown} setShowDropdown={setShowDropdown}
           handleLogout={handleLogout} setShowLogin={setShowLogin}
         />

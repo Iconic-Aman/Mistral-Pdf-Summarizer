@@ -6,10 +6,10 @@ import Link from "next/link";
 
 export default function Navbar({
     T, dark, toggle,
-    user, showDropdown, setShowDropdown, handleLogout, setShowLogin
+    user, isLoading, showDropdown, setShowDropdown, handleLogout, setShowLogin
 }: {
     T: Theme; dark: boolean; toggle: () => void;
-    user: AuthUser | null; showDropdown: boolean; setShowDropdown: (b: boolean) => void;
+    user: AuthUser | null; isLoading?: boolean; showDropdown: boolean; setShowDropdown: (b: boolean) => void;
     handleLogout: () => void; setShowLogin: (b: boolean) => void;
 }) {
 
@@ -96,6 +96,8 @@ export default function Navbar({
                             </div>
                         )}
                     </div>
+                ) : isLoading ? (
+                    <div style={{ width: "80px", height: "32px", borderRadius: "2px", background: T.border, opacity: 0.5 }} />
                 ) : (
                     <button
                         className="btn-primary"

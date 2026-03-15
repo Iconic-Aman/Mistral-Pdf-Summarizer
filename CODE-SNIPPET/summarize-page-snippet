@@ -1,0 +1,501 @@
+"use client";
+import { useEffect, useState, useRef, useCallback } from "react";
+
+const LIGHT = {
+  bg: "#f5f3ef", surface: "#ffffff", ink: "#1a1714", muted: "#8a857e",
+  border: "#e8e4de", gold: "#c8861a", navBg: "rgba(245,243,239,0.88)",
+  ring1: "rgba(200,134,26,0.12)", ring2: "rgba(200,134,26,0.18)",
+  ring3: "rgba(26,23,20,0.06)", glow: "rgba(200,134,26,0.08)",
+  cardHover: "0 12px 40px rgba(0,0,0,0.07)",
+  overlay: "rgba(26,23,20,0.55)",
+  uploadBg: "#faf9f6",
+  outputBg: "#fdfcfa",
+  codeBg: "#f0ede8",
+};
+const DARK = {
+  bg: "#111009", surface: "#1c1a15", ink: "#f0ece4", muted: "#7a7468",
+  border: "#2a2720", gold: "#e09b2a", navBg: "rgba(17,16,9,0.88)",
+  ring1: "rgba(224,155,42,0.1)", ring2: "rgba(224,155,42,0.15)",
+  ring3: "rgba(240,236,228,0.04)", glow: "rgba(224,155,42,0.06)",
+  cardHover: "0 12px 40px rgba(0,0,0,0.4)",
+  overlay: "rgba(0,0,0,0.72)",
+  uploadBg: "#161410",
+  outputBg: "#141210",
+  codeBg: "#1e1c17",
+};
+
+const MOCK_USER = { name: "Aman Gupta", email: "aman.apk01@gmail.com", avatar: "AG" };
+
+const MOCK_SUMMARY = `This document presents a comprehensive analysis of transformer-based language models and their applications in natural language processing tasks. The authors introduce a novel attention mechanism that significantly reduces computational complexity while maintaining model performance.
+
+The key contributions include: (1) a sparse attention pattern that scales linearly with sequence length, (2) a novel positional encoding scheme that generalizes to longer sequences than seen during training, and (3) empirical evaluation across seven benchmark datasets demonstrating state-of-the-art results.
+
+Experimental results show a 34% reduction in inference time compared to standard full-attention transformers, with only a 1.2% drop in accuracy on the GLUE benchmark. The model achieves 91.4 on SuperGLUE, surpassing previous best results by 2.1 points.
+
+The paper concludes with an ablation study confirming that each proposed component contributes meaningfully to the overall performance gains, and discusses future directions including application to multi-modal settings and longer document understanding tasks.`;
+
+const CHUNK_LABELS = [
+  "Introduction & background",
+  "Methodology & architecture",
+  "Experimental setup",
+  "Results & evaluation",
+  "Conclusion & future work",
+];
+
+export default function SummarizePage() {
+  const [dark, setDark]           = useState(false);
+  const [toggling, setToggling]   = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [user]                    = useState(MOCK_USER);
+
+  // upload state
+  const [file, setFile]           = useState(null);
+  const [dragging, setDragging]   = useState(false);
+  const [phase, setPhase]         = useState("idle"); // idle | uploading | processing | done | error
+  const [currentChunk, setCurrentChunk] = useState(0);
+  const [totalChunks]             = useState(5);
+  const [streamedText, setStreamedText] = useState("");
+  const [copied, setCopied]       = useState(false);
+  const [jobMeta, setJobMeta]     = useState(null);
+  const fileInputRef              = useRef(null);
+  const outputRef                 = useRef(null);
+  const streamInterval            = useRef(null);
+  const chunkInterval             = useRef(null);
+
+  const T = dark ? DARK : LIGHT;
+
+  const toggleTheme = () => {
+    setToggling(true);
+    setTimeout(() => { setDark(d => !d); setToggling(false); }, 180);
+  };
+
+  // ── mock streaming ──────────────────────────────────────────────
+  const startMockProcess = useCallback(() => {
+    setPhase("uploading");
+    setStreamedText("");
+    setCurrentChunk(0);
+
+    // simulate upload → processing transition
+    setTimeout(() => {
+      setPhase("processing");
+      let chunk = 0;
+      chunkInterval.current = setInterval(() => {
+        chunk++;
+        setCurrentChunk(chunk);
+        if (chunk >= totalChunks) {
+          clearInterval(chunkInterval.current);
+          // start streaming text
+          let i = 0;
+          streamInterval.current = setInterval(() => {
+            i += Math.floor(Math.random() * 4) + 2;
+            if (i >= MOCK_SUMMARY.length) {
+              i = MOCK_SUMMARY.length;
+              clearInterval(streamInterval.current);
+              setPhase("done");
+              setJobMeta({ chunks: totalChunks, tokens: 1842, time: "2m 34s" });
+            }
+            setStreamedText(MOCK_SUMMARY.slice(0, i));
+          }, 28);
+        }
+      }, 900);
+    }, 1200);
+  }, [totalChunks]);
+
+  // scroll output to bottom while streaming
+  useEffect(() => {
+    if (outputRef.current && phase === "processing") {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [streamedText, phase]);
+
+  // cleanup on unmount
+  useEffect(() => () => {
+    clearInterval(streamInterval.current);
+    clearInterval(chunkInterval.current);
+  }, []);
+
+  const handleFile = (f) => {
+    if (!f || f.type !== "application/pdf") return;
+    setFile(f);
+    setPhase("idle");
+    setStreamedText("");
+    setJobMeta(null);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragging(false);
+    handleFile(e.dataTransfer.files[0]);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(streamedText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([streamedText], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${file?.name?.replace(".pdf", "") || "summary"}_summary.txt`;
+    a.click();
+  };
+
+  const reset = () => {
+    clearInterval(streamInterval.current);
+    clearInterval(chunkInterval.current);
+    setFile(null);
+    setPhase("idle");
+    setStreamedText("");
+    setJobMeta(null);
+    setCurrentChunk(0);
+  };
+
+  const progressPct = phase === "uploading" ? 12
+    : phase === "processing" ? Math.round((currentChunk / totalChunks) * 88) + 12
+    : phase === "done" ? 100 : 0;
+
+  // ── styles ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400&display=swap";
+    document.head.appendChild(link);
+    const style = document.createElement("style");
+    style.id = "bz-sum";
+    style.textContent = `
+      *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+      html,body{height:100%}
+      ::-webkit-scrollbar{width:3px}
+      ::-webkit-scrollbar-thumb{background:#c8c4bc}
+      @keyframes spin{to{transform:rotate(360deg)}}
+      @keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+      @keyframes pulse-ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.55);opacity:0}}
+      @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes stream-cursor{0%,100%{opacity:1}50%{opacity:0}}
+      @keyframes modal-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes progress-shine{0%{left:-100%}100%{left:200%}}
+      .nav-link{text-decoration:none;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.12em;transition:color .2s}
+      .theme-btn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;cursor:pointer;border:1px solid;transition:all .25s ease;font-size:15px;background:transparent;flex-shrink:0}
+      .theme-btn:hover{transform:rotate(18deg) scale(1.08)}
+      .avatar-btn{display:flex;align-items:center;gap:8px;cursor:pointer;background:transparent;border:none;padding:0}
+      .avatar-circle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;flex-shrink:0}
+      .dropdown{position:absolute;top:calc(100% + 10px);right:0;min-width:200px;border-radius:4px;overflow:hidden;z-index:200;animation:modal-in .18s ease forwards}
+      .dropdown-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;cursor:pointer;transition:background .15s;font-family:'DM Sans',sans-serif;border:none;width:100%;text-align:left}
+      .upload-zone{border-radius:6px;transition:all .3s ease;cursor:pointer;position:relative;overflow:hidden}
+      .upload-zone:hover{transform:translateY(-2px)}
+      .action-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.1em;cursor:pointer;border-radius:2px;transition:all .2s ease;border:none}
+      .action-btn:hover{transform:translateY(-1px)}
+      .chunk-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid;transition:all .3s}
+      .stream-text{font-family:'DM Sans',sans-serif;font-size:15px;line-height:1.85;font-weight:300;white-space:pre-wrap;word-break:break-word}
+    `;
+    document.head.appendChild(style);
+    const close = e => {
+      if (!e.target.closest(".avatar-btn") && !e.target.closest(".dropdown")) setShowDropdown(false);
+    };
+    document.addEventListener("click", close);
+    return () => {
+      if (document.head.contains(link)) document.head.removeChild(link);
+      const s = document.getElementById("bz-sum"); if (s) document.head.removeChild(s);
+      document.removeEventListener("click", close);
+    };
+  }, []);
+
+  return (
+    <div style={{ background: T.bg, color: T.ink, fontFamily: "'DM Sans',sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", transition: "background .35s,color .35s", opacity: toggling ? 0 : 1 }}>
+
+      {/* ── NAV ── */}
+      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 52px", height: "56px", background: T.navBg, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: `1px solid ${T.border}`, transition: "background .35s,border-color .35s" }}>
+
+        <a href="/" style={{ textDecoration: "none", fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em" }}>
+          <span style={{ color: T.gold }}>BOTZ</span><span style={{ color: T.ink }}>CODER</span>
+        </a>
+
+        <div style={{ display: "flex", gap: "32px" }}>
+          {[["SUMMARIZE", "/summarize"], ["HISTORY", "/history"], ["DOCS", "/docs"]].map(([l, href]) => (
+            <a key={l} href={href} className="nav-link"
+              style={{ color: l === "SUMMARIZE" ? T.gold : T.muted, borderBottom: l === "SUMMARIZE" ? `1px solid ${T.gold}` : "none", paddingBottom: "2px" }}
+              onMouseEnter={e => { if (l !== "SUMMARIZE") e.target.style.color = T.ink; }}
+              onMouseLeave={e => { if (l !== "SUMMARIZE") e.target.style.color = T.muted; }}>{l}</a>
+          ))}
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <button className="theme-btn" onClick={toggleTheme} style={{ borderColor: T.border, color: T.muted }}>
+            {dark ? "☀" : "☽"}
+          </button>
+          <div style={{ position: "relative" }}>
+            <button className="avatar-btn" onClick={() => setShowDropdown(d => !d)}>
+              <div className="avatar-circle" style={{ background: dark ? "#2e2a1e" : "#f0e8d5", color: T.gold, border: `1.5px solid ${T.gold}` }}>{user.avatar}</div>
+              <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.ink, letterSpacing: ".06em" }}>{user.name.split(" ")[0].toUpperCase()}</span>
+              <span style={{ color: T.muted, fontSize: "10px" }}>▾</span>
+            </button>
+            {showDropdown && (
+              <div className="dropdown" style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: T.cardHover }}>
+                <div style={{ padding: "14px 16px", borderBottom: `1px solid ${T.border}` }}>
+                  <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "13px", color: T.ink, marginBottom: "2px" }}>{user.name}</div>
+                  <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted }}>{user.email}</div>
+                </div>
+                {[["◎ History", "/history"], ["◈ Account", "/account"]].map(([label, href]) => (
+                  <a key={label} href={href} className="dropdown-item" style={{ background: "transparent", color: T.ink, textDecoration: "none" }}
+                    onMouseEnter={e => e.currentTarget.style.background = dark ? "#2a2720" : "#f5f3ef"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>{label}</a>
+                ))}
+                <div style={{ borderTop: `1px solid ${T.border}` }}>
+                  <button className="dropdown-item" style={{ background: "transparent", color: "#c0392b" }}
+                    onMouseEnter={e => e.currentTarget.style.background = dark ? "#2a2720" : "#fdf2f0"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>Sign out</button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      {/* ── PAGE HEADER ── */}
+      <div style={{ paddingTop: "80px", padding: "80px 52px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "20px", borderBottom: `1px solid ${T.border}` }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+            <a href="/" style={{ display: "flex", alignItems: "center", gap: "7px", textDecoration: "none", fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".1em", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: "2px", transition: "all .2s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>
+              ← BACK
+            </a>
+            <div>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold, letterSpacing: ".2em", marginBottom: "6px" }}>— SUMMARIZE</div>
+              <h1 style={{ fontFamily: "'Syne',sans-serif", fontWeight: 800, fontSize: "clamp(22px,3vw,32px)", letterSpacing: "-.02em", color: T.ink }}>Upload a PDF</h1>
+            </div>
+          </div>
+          {phase === "done" && (
+            <button onClick={reset} style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", letterSpacing: ".1em", color: T.muted, background: "transparent", border: `1px solid ${T.border}`, padding: "8px 16px", borderRadius: "2px", cursor: "pointer", transition: "all .2s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>
+              + NEW SUMMARY
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── MAIN SPLIT LAYOUT ── */}
+      <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1.8fr", gap: "0", padding: "0 52px 48px", marginTop: "28px", minHeight: 0 }}>
+
+        {/* ══ LEFT — UPLOAD PANEL ══ */}
+        <div style={{ paddingRight: "32px", borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", gap: "20px" }}>
+
+          {/* Drop zone */}
+          <div
+            className="upload-zone"
+            onClick={() => phase === "idle" && fileInputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            style={{
+              border: `1.5px dashed ${dragging ? T.gold : file ? T.gold : T.border}`,
+              background: dragging ? `rgba(${dark ? "224,155,42" : "200,134,26"},.06)` : T.uploadBg,
+              padding: "40px 24px",
+              textAlign: "center",
+              cursor: phase !== "idle" ? "default" : "pointer",
+              transition: "all .3s",
+            }}>
+            <input ref={fileInputRef} type="file" accept=".pdf" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+
+            {/* Icon */}
+            <div style={{ fontSize: "28px", marginBottom: "14px", opacity: file ? 1 : 0.45 }}>
+              {file ? "◈" : "⬡"}
+            </div>
+
+            {file ? (
+              <>
+                <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "14px", color: T.gold, marginBottom: "4px", wordBreak: "break-all" }}>
+                  {file.name}
+                </div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted }}>
+                  {(file.size / 1024).toFixed(1)} KB · PDF
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "15px", color: T.ink, marginBottom: "8px" }}>
+                  Drop your PDF here
+                </div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".06em", marginBottom: "16px" }}>
+                  or click to browse
+                </div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", color: T.muted, letterSpacing: ".08em" }}>
+                  PDF only · max 25 MB
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Upload button */}
+          {file && phase === "idle" && (
+            <button onClick={startMockProcess} style={{ width: "100%", padding: "13px", background: T.ink, color: T.bg, fontFamily: "'Space Mono',monospace", fontSize: "11px", letterSpacing: ".12em", border: "none", borderRadius: "2px", cursor: "pointer", transition: "opacity .2s", animation: "fadeIn .3s ease" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = ".82"}
+              onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
+              SUMMARIZE →
+            </button>
+          )}
+
+          {/* Change file */}
+          {file && phase === "idle" && (
+            <button onClick={() => fileInputRef.current?.click()} style={{ width: "100%", padding: "11px", background: "transparent", color: T.muted, fontFamily: "'Space Mono',monospace", fontSize: "10px", letterSpacing: ".1em", border: `1px solid ${T.border}`, borderRadius: "2px", cursor: "pointer", transition: "all .2s" }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = T.muted; e.currentTarget.style.color = T.ink; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>
+              CHANGE FILE
+            </button>
+          )}
+
+          {/* Progress bar */}
+          {(phase === "uploading" || phase === "processing" || phase === "done") && (
+            <div style={{ animation: "fadeIn .3s ease" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".08em" }}>
+                  {phase === "uploading" ? "UPLOADING..." : phase === "processing" ? `CHUNK ${currentChunk} / ${totalChunks}` : "COMPLETE"}
+                </span>
+                <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.gold }}>{progressPct}%</span>
+              </div>
+              <div style={{ height: "3px", background: T.border, borderRadius: "2px", overflow: "hidden", position: "relative" }}>
+                <div style={{ height: "100%", width: `${progressPct}%`, background: T.gold, borderRadius: "2px", transition: "width .6s ease", position: "relative", overflow: "hidden" }}>
+                  {phase !== "done" && (
+                    <div style={{ position: "absolute", top: 0, bottom: 0, width: "40%", background: "linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent)", animation: "progress-shine 1.4s infinite" }} />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Chunk status list */}
+          {(phase === "processing" || phase === "done") && (
+            <div style={{ animation: "fadeIn .4s ease" }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", color: T.muted, letterSpacing: ".14em", marginBottom: "10px" }}>CHUNKS</div>
+              {CHUNK_LABELS.map((label, i) => {
+                const done = i < currentChunk;
+                const active = i === currentChunk - 1 && phase === "processing";
+                return (
+                  <div key={i} className="chunk-row" style={{ borderBottomColor: T.border }}>
+                    <div style={{
+                      width: "18px", height: "18px", borderRadius: "50%", flexShrink: 0,
+                      background: done ? T.gold : active ? `rgba(${dark ? "224,155,42" : "200,134,26"},.15)` : T.border,
+                      border: `1.5px solid ${done || active ? T.gold : T.border}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      transition: "all .3s",
+                      position: "relative",
+                    }}>
+                      {active && <div style={{ position: "absolute", inset: -4, borderRadius: "50%", border: `1px solid ${T.gold}`, animation: "pulse-ring 1.2s infinite" }} />}
+                      {done && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: dark ? "#111009" : "#fff" }} />}
+                    </div>
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "13px", color: done ? T.ink : T.muted, fontWeight: done ? 400 : 300, transition: "color .3s" }}>{label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Job metadata */}
+          {phase === "done" && jobMeta && (
+            <div style={{ padding: "16px", background: T.codeBg, borderRadius: "4px", animation: "fadeIn .4s ease" }}>
+              <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", color: T.muted, letterSpacing: ".14em", marginBottom: "10px" }}>JOB DETAILS</div>
+              {[["File", file?.name], ["Chunks", jobMeta.chunks], ["Tokens", jobMeta.tokens.toLocaleString()], ["Time", jobMeta.time]].map(([k, v]) => (
+                <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted }}>{k}</span>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.ink, maxWidth: "140px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", textAlign: "right" }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ══ RIGHT — OUTPUT PANEL ══ */}
+        <div style={{ paddingLeft: "36px", display: "flex", flexDirection: "column" }}>
+
+          {/* Output header */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <span style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "16px", color: T.ink }}>Summary</span>
+              {phase === "processing" && (
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", padding: "3px 10px", background: `rgba(${dark ? "224,155,42" : "200,134,26"},.1)`, border: `1px solid rgba(${dark ? "224,155,42" : "200,134,26"},.25)`, borderRadius: "2px" }}>
+                  <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.gold, animation: "blink 1s infinite" }} />
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", color: T.gold, letterSpacing: ".1em" }}>STREAMING</span>
+                </div>
+              )}
+              {phase === "done" && (
+                <div style={{ padding: "3px 10px", background: "rgba(34,197,94,.1)", border: "1px solid rgba(34,197,94,.25)", borderRadius: "2px" }}>
+                  <span style={{ fontFamily: "'Space Mono',monospace", fontSize: "9px", color: "#16a34a", letterSpacing: ".1em" }}>DONE</span>
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            {(phase === "processing" || phase === "done") && streamedText && (
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button className="action-btn" onClick={handleCopy}
+                  style={{ background: copied ? T.gold : T.codeBg, color: copied ? (dark ? "#111009" : "#fff") : T.muted, border: `1px solid ${copied ? T.gold : T.border}` }}>
+                  {copied ? "✓ COPIED" : "COPY"}
+                </button>
+                {phase === "done" && (
+                  <button className="action-btn" onClick={handleDownload}
+                    style={{ background: T.codeBg, color: T.muted, border: `1px solid ${T.border}` }}
+                    onMouseEnter={e => { e.currentTarget.style.background = T.ink; e.currentTarget.style.color = T.bg; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = T.codeBg; e.currentTarget.style.color = T.muted; }}>
+                    DOWNLOAD .TXT
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Output body */}
+          <div ref={outputRef} style={{
+            flex: 1, minHeight: "480px", maxHeight: "calc(100vh - 260px)",
+            overflowY: "auto", padding: "28px 32px",
+            background: T.outputBg, border: `1px solid ${T.border}`, borderRadius: "6px",
+            position: "relative",
+          }}>
+
+            {/* ── IDLE ── */}
+            {phase === "idle" && (
+              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", opacity: 0.4 }}>
+                <div style={{ fontSize: "36px" }}>◎</div>
+                <div style={{ fontFamily: "'Syne',sans-serif", fontWeight: 700, fontSize: "16px", color: T.ink, textAlign: "center" }}>
+                  Your summary will appear here
+                </div>
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, textAlign: "center", letterSpacing: ".08em" }}>
+                  Upload a PDF to get started
+                </div>
+              </div>
+            )}
+
+            {/* ── UPLOADING ── */}
+            {phase === "uploading" && (
+              <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", animation: "fadeIn .3s ease" }}>
+                <div style={{ width: "36px", height: "36px", border: `2px solid ${T.border}`, borderTopColor: T.gold, borderRadius: "50%", animation: "spin .8s linear infinite" }} />
+                <div style={{ fontFamily: "'Space Mono',monospace", fontSize: "11px", color: T.muted, letterSpacing: ".1em" }}>UPLOADING TO R2...</div>
+              </div>
+            )}
+
+            {/* ── STREAMING TEXT ── */}
+            {(phase === "processing" || phase === "done") && (
+              <div style={{ animation: "fadeIn .3s ease" }}>
+                <p className="stream-text" style={{ color: T.ink }}>
+                  {streamedText}
+                  {phase === "processing" && (
+                    <span style={{ display: "inline-block", width: "2px", height: "1em", background: T.gold, marginLeft: "2px", verticalAlign: "text-bottom", animation: "stream-cursor .7s steps(1) infinite" }} />
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom hint */}
+          {phase === "idle" && (
+            <p style={{ marginTop: "12px", fontFamily: "'Space Mono',monospace", fontSize: "10px", color: T.muted, letterSpacing: ".06em", lineHeight: 1.7 }}>
+              Mistral 7B reads your PDF in chunks and streams the summary token by token via SSE. Typical time: 2–5 min depending on PDF length.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

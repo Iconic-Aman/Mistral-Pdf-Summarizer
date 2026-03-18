@@ -34,8 +34,9 @@ async def extract_text_from_pdf(url: str) -> str:
 async def get_mistral_summary(text: str) -> str:
     """Calls Hugging Face Inference API for Mistral-7B-Instruct."""
     HF_TOKEN = os.getenv("HF_TOKEN")
-    MODEL_ID = os.getenv("MISTRAL_MODEL_ID", "mistralai/Mistral-7B-Instruct-v0.3")
-    API_URL = f"https://router.huggingface.co/hf-inference/models/{MODEL_ID}"
+    HF_MODEL_ID = os.getenv("MISTRAL_MODEL_ID")
+    HF_API_BASE = os.getenv("HF_INFERENCE_API_BASE", "https://router.huggingface.co/hf-inference/models")
+    API_URL = f"{HF_API_BASE}/{HF_MODEL_ID}"
     
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}
     
@@ -59,7 +60,7 @@ async def get_mistral_summary(text: str) -> str:
 
 async def simulate_summarization(job_id: uuid.UUID, db_factory):
     """
-    Real summarization task using Mistral 7B via Hugging Face.
+    Real summarization task using the Modal endpoint.
     """
     async with db_factory() as db:
         # 1. Update status to processing
@@ -71,12 +72,21 @@ async def simulate_summarization(job_id: uuid.UUID, db_factory):
         await db.commit()
 
         try:
-            # 2. Get the PDF and extract text
+            # 2. Get the PDF url
             pdf_url = get_signed_url(job.r2_key)
-            extracted_text = await extract_text_from_pdf(pdf_url)
             
-            # 3. Call Mistral
-            ai_summary = await get_mistral_summary(extracted_text)
+            # 3. Call Modal Endpoint
+            MODAL_ENDPOINT = os.getenv("MODAL_ENDPOINT")
+            if not MODAL_ENDPOINT:
+                raise Exception("MODAL_ENDPOINT not set in environment")
+            
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(MODAL_ENDPOINT, json={"pdf_url": pdf_url})
+                if response.status_code != 200:
+                    ai_summary = f"Error from Modal: {response.text}"
+                else:
+                    data = response.json()
+                    ai_summary = data.get("summary", data.get("error", "No summary returned."))
 
             # 4. Save Real summary
             summary = Summary(

@@ -11,6 +11,11 @@ from backend.storage.r2_client import get_signed_url
 import fitz  # PyMuPDF
 import httpx
 import os
+import logging
+import traceback
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 router = APIRouter(
     prefix="/api/v1/summarize",
@@ -34,7 +39,7 @@ async def extract_text_from_pdf(url: str) -> str:
 async def get_mistral_summary(text: str) -> str:
     """Calls Hugging Face Inference API for Mistral-7B-Instruct."""
     HF_TOKEN = os.getenv("HF_TOKEN")
-    HF_MODEL_ID = os.getenv("MISTRAL_MODEL_ID")
+    HF_MODEL_ID = os.getenv("HF_MODEL_ID")
     HF_API_BASE = os.getenv("HF_INFERENCE_API_BASE", "https://router.huggingface.co/hf-inference/models")
     API_URL = f"{HF_API_BASE}/{HF_MODEL_ID}"
     
@@ -62,46 +67,77 @@ async def simulate_summarization(job_id: uuid.UUID, db_factory):
     """
     Real summarization task using the Modal endpoint.
     """
+    logger.info(f"[JOB {job_id}] Starting background summarization task.")
     async with db_factory() as db:
         # 1. Update status to processing
         result = await db.execute(select(Job).where(Job.id == job_id))
         job = result.scalars().first()
-        if not job: return
+        if not job: 
+            logger.error(f"[JOB {job_id}] Job not found in database! Aborting.")
+            return
         
+        logger.info(f"[JOB {job_id}] Found job. Updating status to 'processing'.")
         job.status = "processing"
         await db.commit()
 
         try:
             # 2. Get the PDF url
+            logger.info(f"[JOB {job_id}] Generating signed R2 URL for key: {job.r2_key}")
             pdf_url = get_signed_url(job.r2_key)
+            logger.info(f"[JOB {job_id}] R2 URL generated successfully.")
             
             # 3. Call Modal Endpoint
             MODAL_ENDPOINT = os.getenv("MODAL_ENDPOINT")
+            HF_MODEL_ID = os.getenv("HF_MODEL_ID")
+            logger.info(f"[JOB {job_id}] Checking Modal Endpoint from env: {MODAL_ENDPOINT}")
+            logger.info(f"[JOB {job_id}] Checking HF_MODEL_ID from env: {HF_MODEL_ID}")
+
             if not MODAL_ENDPOINT:
+                logger.error(f"[JOB {job_id}] MODAL_ENDPOINT not set in environment.")
                 raise Exception("MODAL_ENDPOINT not set in environment")
             
+            request_payload = {
+                "pdf_url": pdf_url,
+                "model_id": HF_MODEL_ID
+            }
+            logger.info(f"[JOB {job_id}] Sending POST request to Modal with payload: {request_payload}")
+            
             async with httpx.AsyncClient(timeout=300.0) as client:
-                response = await client.post(MODAL_ENDPOINT, json={"pdf_url": pdf_url})
+                response = await client.post(MODAL_ENDPOINT, json=request_payload)
+                logger.info(f"[JOB {job_id}] Received response from Modal: Status {response.status_code}")
+                
                 if response.status_code != 200:
+                    logger.error(f"[JOB {job_id}] Error from Modal Endpoint: {response.text}")
                     ai_summary = f"Error from Modal: {response.text}"
                 else:
                     data = response.json()
-                    ai_summary = data.get("summary", data.get("error", "No summary returned."))
+                    logger.info(f"[JOB {job_id}] Modal JSON response received. Keys: {list(data.keys())}")
+                    
+                    # Check for CUDA errors in response
+                    if "error" in data and "CUDA" in str(data["error"]):
+                        logger.error(f"[JOB {job_id}] CUDA Error from Modal: {data['error']}")
+                        ai_summary = f"CUDA Error: {data['error']}. Please try with a shorter document."
+                    else:
+                        ai_summary = data.get("summary", data.get("error", "No summary returned."))
 
             # 4. Save Real summary
+            logger.info(f"[JOB {job_id}] Saving summary to DB (Length: {len(str(ai_summary))})")
             summary = Summary(
                 job_id=job.id,
                 content=ai_summary,
-                tokens_used=len(ai_summary) // 4  # Rough estimate
+                tokens_used=len(str(ai_summary)) // 4  # Rough estimate
             )
             db.add(summary)
             
             # 5. Update job status
+            logger.info(f"[JOB {job_id}] Marking job as 'completed'!")
             job.status = "completed"
             job.finished_at = datetime.now()
             await db.commit()
+            
         except Exception as e:
-            print(f"Summarization Task Error: {str(e)}")
+            logger.error(f"[JOB {job_id}] Summarization Task Error: {str(e)}")
+            logger.error(traceback.format_exc())
             job.status = "error"
             await db.commit()
 

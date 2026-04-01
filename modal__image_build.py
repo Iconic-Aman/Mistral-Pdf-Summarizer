@@ -6,20 +6,19 @@ app = modal.App("mistral-pdf-summarizer")
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install([
-        # Core inference stack
         "torch==2.3.0",
         "transformers==4.44.0",
-        "bitsandbytes==0.43.0",  
-        "accelerate==0.33.0",              
-        "peft",                   
-        "trl==0.8.0",            
+        "bitsandbytes==0.43.0",
+        "accelerate==0.33.0",
+        "peft",
+        "trl==0.8.0",
         "pymupdf",
-        "unsloth",                
-        "xformers==0.0.26.post1",               
+        "unsloth",
+        "xformers==0.0.26.post1",
         "huggingface_hub",
-        "sentencepiece",          
-        "protobuf",   
-        'fastapi[standard]',         
+        "sentencepiece",
+        "protobuf",
+        "fastapi[standard]",
     ]).env({
         "PYTHONIOENCODING": "utf-8",
         "UNSLOTH_VERSION_CHECK": "0"
@@ -30,21 +29,17 @@ from dotenv import load_dotenv
 load_dotenv(".env")
 
 HF_MODEL_ID = os.getenv("HF_MODEL_ID")
-MISTRAL_BASE_MODEL = os.getenv("MISTRAL_BASE_MODEL")
 HF_TOKEN = os.getenv("HF_TOKEN")
-print(f"[CONFIG] Base model: {MISTRAL_BASE_MODEL}")
-print(f"[CONFIG] Adapter: {HF_MODEL_ID}")
 
 
 @app.cls(
     image=image,
     gpu="T4",
     timeout=600,
-    scaledown_window=300,   # ✅ keep container warm for 5 mins
+    scaledown_window=300,
     secrets=[modal.Secret.from_dict({
         "HF_TOKEN": HF_TOKEN,
         "HF_MODEL_ID": HF_MODEL_ID,
-        "MISTRAL_BASE_MODEL": MISTRAL_BASE_MODEL,
     })],
     volumes={"/model-cache": modal.Volume.from_name("model-cache", create_if_missing=True)},
 )
@@ -55,14 +50,12 @@ class MistralSummarizer:
         from unsloth import FastLanguageModel
 
         hf_token = os.environ.get("HF_TOKEN")
-        adapter_id = os.environ.get("HF_MODEL_ID")  
+        adapter_id = os.environ.get("HF_MODEL_ID")
 
-        print(f"[STARTUP] Loading fine-tuned model: {adapter_id}", flush=True)
-
-        # ✅ load exactly like Colab — direct fine-tuned model, no separate PeftModel
+        print(f"[STARTUP] Loading: {adapter_id}", flush=True)
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
             model_name=adapter_id,
-            max_seq_length=2048,   # ✅ fixed from 512
+            max_seq_length=2048,
             dtype=None,
             load_in_4bit=True,
             token=hf_token,
@@ -72,39 +65,49 @@ class MistralSummarizer:
         print("[STARTUP] Model ready!", flush=True)
 
     def _clean_summary(self, raw: str) -> str:
-        """Extract clean bullet points, remove noise and URLs."""
         import re
-        def is_noise(line):
-            return (not line or re.search(r'https?://', line)
-                    or line.lower().startswith(("reference", "source", "more info")))
 
-        lines = raw.replace("•", "\n•").split("\n")
-        bullets, seen = [], set()
-        clean_para = []
+        title = ""
+        bullets = []
+        seen = set()
 
-        for line in lines:
+        for line in raw.strip().split('\n'):
             line = line.strip()
-            if is_noise(line):
+            if not line:
                 continue
-            if line.startswith(("•", "-", "*")):
-                point = line.lstrip("•-* ").strip()
+            if re.search(r'https?://', line):
+                continue
+
+            # extract title — first one wins
+            title_match = re.match(r'^(Title|Document Title)\s*:\s*(.+)', line, re.IGNORECASE)
+            if title_match and not title:
+                title = title_match.group(2).strip()
+                continue
+
+            # skip section headers
+            if re.match(r'^Key\s*Points?\s*:', line, re.IGNORECASE):
+                continue
+
+            # normalize all bullet styles: *, -, +, •
+            bullet_match = re.match(r'^[•\*\+\-]+\s*(.+)', line)
+            if bullet_match:
+                point = bullet_match.group(1).strip()
+                point = point.rstrip('.,;:') + '.'
                 key = point[:40].lower()
                 if key not in seen and len(point) > 10:
                     seen.add(key)
                     bullets.append(f"• {point}")
                     if len(bullets) == 8:
                         break
-            else:
-                clean_para.append(line)
 
-        if bullets:
-            return "\n".join(bullets)
-        # Fallback: return cleaned paragraph (no URLs)
-        return " ".join(clean_para).strip()
+        result = ""
+        if title:
+            result += f"{title}\n\n"
+        result += "\n".join(bullets)
+        return result.strip()
 
     def _generate(self, text: str):
-
-        # ✅ chunk if long, summarize each chunk
+        # split into chunks
         chunks = []
         chunk_size = 3000
         for i in range(0, len(text), chunk_size - 200):
@@ -112,34 +115,50 @@ class MistralSummarizer:
             if chunk.strip():
                 chunks.append(chunk)
 
-        # summarize each chunk, collect results
-        all_tokens = []
+        # ✅ clean each chunk individually, merge bullets
+        all_bullets = []
+        title = ""
+
         for chunk in chunks:
-            yield from self._generate_chunk(chunk)
+            raw = "".join(self._generate_chunk(chunk))
+            cleaned = self._clean_summary(raw)
+
+            for line in cleaned.strip().split('\n'):
+                line = line.strip()
+                if not line:
+                    continue
+                # grab title from first chunk only
+                if not title and not line.startswith('•'):
+                    title = line
+                elif line.startswith('•') and len(all_bullets) < 8:
+                    all_bullets.append(line)
+
+        result = ""
+        if title:
+            result += f"{title}\n\n"
+        result += "\n".join(all_bullets)
+
+        # yield final merged result as one string
+        yield result
 
     def _generate_chunk(self, text: str):
         import threading
         from transformers import TextIteratorStreamer
 
-        text = text[:3000]  # safety cap per chunk
-        # ✅ correct — prompt content starts at column 0
-        prompt = f"""<s>[INST] Summarize the document below into bullet points.
+        text = text[:3000]
 
-            STRICT RULES:
-            - Only include information explicitly stated in the document
-            - Do NOT add facts or examples not mentioned in the text
-            - Maximum 8 bullet points starting with •
-            - End each point with a period
-
-            Document:
-            {text} [/INST]
-        - """
+        prompt = (
+            "<s>[INST] Summarize the following document.\n"
+            "Start with a short title, then list the key points.\n"
+            "Only include information from the document.\n\n"
+            f"Document:\n{text} [/INST]\n"
+        )
 
         inputs = self.tokenizer(
             [prompt],
             return_tensors="pt",
             truncation=True,
-            max_length=2048,    # ✅ matches max_seq_length
+            max_length=2048,
         ).to("cuda")
 
         streamer = TextIteratorStreamer(
@@ -180,54 +199,40 @@ class MistralSummarizer:
             pdf_url = item.get("pdf_url")
             stream_response = item.get("stream", False)
 
-            # 1. Fetch PDF
-            if pdf_url:
-                print(f"[DEBUG] Downloading PDF...", flush=True)
-                req = urllib.request.Request(pdf_url, headers={"User-Agent": "Mozilla/5.0"})
-                with urllib.request.urlopen(req) as r:
-                    pdf_bytes = r.read()
-            else:
+            if not pdf_url:
                 return {"error": "Missing pdf_url"}
 
-            # 2. Extract text
+            print(f"[DEBUG] Downloading PDF...", flush=True)
+            req = urllib.request.Request(pdf_url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req) as r:
+                pdf_bytes = r.read()
+
             doc = fitz.open(stream=pdf_bytes, filetype="pdf")
             full_text = "".join([page.get_text() for page in doc])
             doc.close()
-
             print(f"[DEBUG] Extracted {len(full_text.split())} words", flush=True)
 
-            # 3. Stream or return full summary
             if stream_response:
                 def event_generator():
                     try:
-                        for token in self._generate(full_text):
-                            if token:
-                                yield f"data: {json.dumps({'token': token})}\n\n"
+                        # _generate yields one final cleaned string
+                        final = "".join(self._generate(full_text))
+                        for char in final:
+                            yield f"data: {json.dumps({'token': char})}\n\n"
                         yield f"data: {json.dumps({'done': True})}\n\n"
                     except Exception as e:
                         yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
                 return StreamingResponse(event_generator(), media_type="text/event-stream")
             else:
-                tokens = []
-                for token in self._generate(full_text):
-                    tokens.append(token)
-                summary = "".join(tokens)
-                return {"summary": self._clean_summary(summary)}
+                summary = "".join(self._generate(full_text))
+                return {"summary": summary}
 
         except torch.cuda.CUDAError as e:
-            # Handle CUDA-specific errors
             torch.cuda.empty_cache()
-            return {
-                "error": f"CUDA Error: {str(e)}",
-                "traceback": traceback.format_exc(),
-                "suggestion": "Try reducing input text length or check GPU memory"
-            }
+            return {"error": f"CUDA Error: {str(e)}", "traceback": traceback.format_exc()}
         except Exception as e:
-            return {
-                "error": str(e),
-                "traceback": traceback.format_exc()
-            }
+            return {"error": str(e), "traceback": traceback.format_exc()}
 
 
 @app.local_entrypoint()
@@ -235,10 +240,13 @@ def main(pdf_url: str = None):
     if not pdf_url:
         pdf_url = os.getenv("PDF_URL")
     if not pdf_url:
-        print("ERROR: No PDF_URL provided. Set PDF_URL in .env or pass --pdf-url <url>")
+        print("ERROR: No PDF_URL provided.")
         return
-    print(f"Testing with: {pdf_url}")
     import requests
-    response = requests.post(MistralSummarizer().summarize.web_url, json={"pdf_url": pdf_url}, timeout=300)
+    response = requests.post(
+        MistralSummarizer().summarize.web_url,
+        json={"pdf_url": pdf_url},
+        timeout=300
+    )
     print("\n===== SUMMARY =====")
     print(response.json())

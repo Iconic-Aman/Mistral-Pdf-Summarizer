@@ -64,66 +64,60 @@ export default function SummarizePage() {
 
             const { job_id } = await uploadPromise;
 
-            // 2. START SUMMARIZATION PHASE
+            // 2. SSE STREAMING WITH FETCH (Replaces Start & Polling)
             setPhase("processing");
-            const startRes = await fetch(`${API_BASE_URL}/api/v1/summarize/start/${job_id}`, {
-                method: "POST",
-                headers: {
-                    "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
-                }
-            });
-
-            if (!startRes.ok) throw new Error("Failed to start summarization");
-
-            // 3. POLLING FOR COMPLETION
-            // We'll visually cycle through chunks while polling the real status
-            let chunk = 0;
-            chunkRef.current = setInterval(() => {
-                if (chunk < TOTAL_CHUNKS - 1) {
-                    chunk++;
-                    setCurrentChunk(chunk);
-                }
-            }, 600);
-
-            const pollStatus = async () => {
-                try {
-                    const statusRes = await fetch(`${API_BASE_URL}/api/v1/summarize/status/${job_id}`, {
-                        headers: {
-                            "Authorization": user.idToken ? `Bearer ${user.idToken}` : "",
-                        }
-                    });
-                    const statusData = await statusRes.json();
-
-                    if (statusData.status === "completed") {
-                        clearInterval(chunkRef.current!);
-                        setCurrentChunk(TOTAL_CHUNKS);
-
-                        // Fake stream the real result for that premium feel
-                        const realSummary = statusData.summary;
-                        let i = 0;
-                        streamRef.current = setInterval(() => {
-                            i += Math.floor(Math.random() * 4) + 2;
-                            if (i >= realSummary.length) {
-                                i = realSummary.length;
-                                clearInterval(streamRef.current!);
-                                setPhase("done");
-                                setJobMeta({ chunks: TOTAL_CHUNKS, tokens: 150, time: "Real Job" });
-                            }
-                            setStreamedText(realSummary.slice(0, i));
-                        }, 20);
-                        return true; // Stop polling
+            setCurrentChunk(TOTAL_CHUNKS); // Visual progress bar completion
+            
+            try {
+                const streamRes = await fetch(`${API_BASE_URL}/api/v1/summarize/stream/${job_id}`, {
+                    method: 'GET',
+                    headers: {
+                        "Authorization": user?.idToken ? `Bearer ${user.idToken}` : "",
+                        "Accept": "text/event-stream",
                     }
-                    return false;
-                } catch (e) {
-                    console.error("Polling error", e);
-                    return false;
-                }
-            };
+                });
 
-            const pollInterval = setInterval(async () => {
-                const isDone = await pollStatus();
-                if (isDone) clearInterval(pollInterval);
-            }, 2000);
+                if (!streamRes.ok) throw new Error("Stream connection failed");
+
+                const reader = streamRes.body?.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let done = false;
+
+                while (!done && reader) {
+                    const { value, done: readerDone } = await reader.read();
+                    if (value) {
+                        const chunkStr = decoder.decode(value, { stream: true });
+                        const lines = chunkStr.split("\n");
+                        for (const line of lines) {
+                            if (line.startsWith("data: ")) {
+                                try {
+                                    const data = JSON.parse(line.slice(6));
+                                    if (data.token) {
+                                        setStreamedText(prev => prev + data.token);
+                                    }
+                                    if (data.done) {
+                                        done = true;
+                                        setPhase("done");
+                                        setJobMeta({ chunks: TOTAL_CHUNKS, tokens: 0, time: "Streamed Job" });
+                                    }
+                                    if (data.error) {
+                                        done = true;
+                                        setPhase("idle");
+                                        alert("Stream Error: " + data.error);
+                                    }
+                                } catch (e) { 
+                                    console.warn("Parse error", e);
+                                }
+                            }
+                        }
+                    }
+                    if (readerDone) done = true;
+                }
+            } catch (err) {
+                console.error("Stream error", err);
+                setPhase("idle");
+                alert("Connection lost during streaming.");
+            }
 
         } catch (err) {
             console.error(err);

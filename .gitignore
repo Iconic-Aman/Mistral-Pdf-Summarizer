@@ -19,6 +19,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
+sse_integration_plan.md
+
 # Python
 __pycache__/
 *.py[cod]

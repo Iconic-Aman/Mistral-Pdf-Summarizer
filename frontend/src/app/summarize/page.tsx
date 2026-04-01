@@ -105,7 +105,9 @@ export default function SummarizePage() {
                                         setPhase("idle");
                                         alert("Stream Error: " + data.error);
                                     }
-                                } catch (e) { }
+                                } catch (e) { 
+                                    console.warn("Parse error", e);
+                                }
                             }
                         }
                     }

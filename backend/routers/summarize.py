@@ -1,4 +1,6 @@
+import json
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from datetime import datetime
@@ -173,3 +175,79 @@ async def get_status(
             response["finished_at"] = job.finished_at
 
     return response
+
+@router.get("/stream/{job_id}")
+async def stream_summary(
+    job_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Streams the summarization result token-by-token using SSE."""
+
+    result = await db.execute(select(Job).where(Job.id == job_id))
+    job = result.scalars().first()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if job.user_id != current_user.id and current_user.id != "system-admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    # If already completed, just send the full summary as one token and close
+    if job.status == "completed":
+        summary_result = await db.execute(select(Summary).where(Summary.job_id == job.id))
+        summary = summary_result.scalars().first()
+        async def cached_generator():
+            if summary:
+                yield f"data: {json.dumps({'token': summary.content})}\n\n"
+            yield f"data: {json.dumps({'done': True})}\n\n"
+        return StreamingResponse(cached_generator(), media_type="text/event-stream")
+
+    async def event_generator():
+        # Update status to processing
+        job.status = "processing"
+        await db.commit()
+        
+        pdf_url = get_signed_url(job.r2_key)
+        MODAL_ENDPOINT = os.getenv("MODAL_ENDPOINT")
+        if not MODAL_ENDPOINT:
+            yield f"data: {json.dumps({'error': 'MODAL_ENDPOINT not set'})}\n\n"
+            return
+            
+        payload = {"pdf_url": pdf_url, "stream": True}
+        full_summary = ""
+        
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                async with client.stream("POST", MODAL_ENDPOINT, json=payload) as response:
+                    async for line in response.aiter_lines():
+                        if line:
+                            yield line + "\n\n"
+                            
+                            # Parse token to save in DB later
+                            if line.startswith("data: "):
+                                try:
+                                    data = json.loads(line[6:])
+                                    if "token" in data:
+                                        full_summary += data["token"]
+                                except Exception:
+                                    pass
+
+            # Once streaming is done, save the full summary to the database
+            if full_summary:
+                summary = Summary(
+                    job_id=job.id,
+                    content=full_summary,
+                    tokens_used=max(1, len(full_summary) // 4)
+                )
+                db.add(summary)
+                job.status = "completed"
+                job.finished_at = datetime.now()
+                await db.commit()
+
+        except Exception as e:
+            job.status = "error"
+            await db.commit()
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

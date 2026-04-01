@@ -112,67 +112,70 @@ class MistralSummarizer:
         # Fallback: return cleaned paragraph (no URLs)
         return " ".join(clean_para).strip()
 
-    def _generate(self, text: str) -> str:
+    def _generate(self, text: str):
         import torch
         import gc
+        import threading
+        from transformers import TextIteratorStreamer
 
-        # Must exactly match the fine-tuning prompt format from the notebook
-        prompt = (
-            "###Human: Read this following Document and provide a clear point-by-point summary of key information.\n"
-            "Rules:\n"
-            "- Extract only the most important and UNIQUE points\n"
-            "- Each point must be different, no repetition\n"
-            "- Maximum 8 bullet points\n"
-            "- Each point starts with •\n"
-            "- End each point with a period\n"
-            "- Do NOT add any new information not present in the document\n"
-            "- Keep statements factually accurate to the source\n\n"
-            + text
-            + "\n\n###Assistant:\n"
-        )
+        # truncate the document, not the whole prompt
+        text = text[:2000]
+
+        prompt = f"""<s>[INST] Read the following document carefully and provide a concise summary.
+Rules:
+- Extract only the most important and UNIQUE points
+- Each point must be different, no repetition
+- Maximum 8 bullet points
+- Each point starts with •
+- End each point with a period
+
+Document:
+{text} [/INST]"""
 
         inputs = self.tokenizer(
             [prompt],
             return_tensors="pt",
             truncation=True,
-            max_length=480,
+            max_length=2048,
         ).to("cuda")
 
-        input_len = inputs["input_ids"].shape[1]
-        print(f"[DEBUG] Input token length: {input_len}", flush=True)
+        streamer = TextIteratorStreamer(
+            self.tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
+            decode_kwargs={"errors": "replace"},
+        )
 
-        with torch.inference_mode():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=200,
-                use_cache=True,
-                do_sample=False,
-                repetition_penalty=1.3,
-                no_repeat_ngram_size=4,
-                pad_token_id=self.tokenizer.eos_token_id,
-                eos_token_id=self.tokenizer.eos_token_id,
-            )
+        generation_kwargs = dict(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            max_new_tokens=300,
+            use_cache=True,
+            do_sample=False,
+            repetition_penalty=1.3,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.eos_token_id,
+            streamer=streamer,
+        )
 
-        # Decode ONLY the newly generated tokens (not the input prompt)
-        new_tokens = outputs[0][input_len:]
-        result = self.tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
-        print(f"[DEBUG] Generated {len(new_tokens)} new tokens", flush=True)
+        thread = threading.Thread(target=self.model.generate, kwargs=generation_kwargs)
+        thread.start()
 
-        del inputs, outputs
-        torch.cuda.empty_cache()
-        gc.collect()
-
-        return result
+        for token in streamer:
+            yield token
 
     @modal.fastapi_endpoint(method="POST")
-    def summarize(self, item: dict) -> dict:
+    def summarize(self, item: dict):
         import urllib.request
         import fitz
         import traceback
         import torch
+        import json
+        from fastapi.responses import StreamingResponse
 
         try:
             pdf_url = item.get("pdf_url")
+            stream_response = item.get("stream", False)
 
             # 1. Fetch PDF
             if pdf_url:
@@ -188,19 +191,26 @@ class MistralSummarizer:
             full_text = "".join([page.get_text() for page in doc])
             doc.close()
 
-            words = full_text.split()
-            print(f"[DEBUG] Extracted {len(words)} words", flush=True)
+            print(f"[DEBUG] Extracted {len(full_text.split())} words", flush=True)
 
-            # 3. Chunk if needed and summarize
-            if len(words) <= 400:
-                summary = self._generate(full_text)
+            # 3. Stream or return full summary
+            if stream_response:
+                def event_generator():
+                    try:
+                        for token in self._generate(full_text):
+                            if token:
+                                yield f"data: {json.dumps({'token': token})}\n\n"
+                        yield f"data: {json.dumps({'done': True})}\n\n"
+                    except Exception as e:
+                        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+                return StreamingResponse(event_generator(), media_type="text/event-stream")
             else:
-                chunks = self._chunk_text(full_text, max_words=400)
-                print(f"[DEBUG] Split into {len(chunks)} chunks", flush=True)
-                chunk_summaries = [self._generate(c) for c in chunks]
-                summary = "\n".join(chunk_summaries)
-
-            return {"summary": self._clean_summary(summary)}
+                tokens = []
+                for token in self._generate(full_text):
+                    tokens.append(token)
+                summary = "".join(tokens)
+                return {"summary": self._clean_summary(summary)}
 
         except torch.cuda.CUDAError as e:
             # Handle CUDA-specific errors

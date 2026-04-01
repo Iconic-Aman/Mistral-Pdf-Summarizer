@@ -1,26 +1,25 @@
 import modal
-import sys
 import os
 
-# -- Modal app & image ----------------------------------------------
 app = modal.App("mistral-pdf-summarizer")
 
 image = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install([
+        # Core inference stack
         "torch==2.3.0",
         "transformers==4.44.0",
-        "bitsandbytes==0.43.0",
-        "accelerate",
-        "unsloth",           # needed since model was trained with unsloth
-        "peft",
-        "trl==0.8.0",              # required by unsloth
-        "pymupdf",           # for PDF text extraction
+        "bitsandbytes==0.43.0",  
+        "accelerate==0.33.0",              
+        "peft",                   
+        "trl==0.8.0",            
+        "pymupdf",
+        "unsloth",                
+        "xformers==0.0.26.post1",               
         "huggingface_hub",
-        "fastapi[standard]", # required for modal.fastapi_endpoint
-        "sentencepiece",
-        "protobuf",
-        "xformers==0.0.26.post1",
+        "sentencepiece",          
+        "protobuf",   
+        'fastapi[standard]',         
     ]).env({
         "PYTHONIOENCODING": "utf-8",
         "UNSLOTH_VERSION_CHECK": "0"
@@ -28,161 +27,215 @@ image = (
 )
 
 from dotenv import load_dotenv
+load_dotenv(".env")
 
-load_dotenv(".env.local")
-
-HF_MODEL_ID = os.getenv("MISTRAL_MODEL_ID")
+HF_MODEL_ID = os.getenv("HF_MODEL_ID")
 MISTRAL_BASE_MODEL = os.getenv("MISTRAL_BASE_MODEL")
 HF_TOKEN = os.getenv("HF_TOKEN")
+print(f"[CONFIG] Base model: {MISTRAL_BASE_MODEL}")
+print(f"[CONFIG] Adapter: {HF_MODEL_ID}")
 
-# GPU Function
-@app.function(
+
+@app.cls(
     image=image,
-    gpu="T4",               # cheap & sufficient for 4-bit 7B model (~$0.30/hr)
-    timeout=600,            # Increased timeout for cold starts
-    secrets=[modal.Secret.from_dict({"HF_TOKEN": HF_TOKEN}) if HF_TOKEN else modal.Secret.from_name("huggingface")],
-    # Cache model weights across runs (avoids re-downloading every time)
+    gpu="T4",
+    timeout=600,
+    scaledown_window=300,   # ✅ keep container warm for 5 mins
+    secrets=[modal.Secret.from_dict({
+        "HF_TOKEN": HF_TOKEN,
+        "HF_MODEL_ID": HF_MODEL_ID,
+        "MISTRAL_BASE_MODEL": MISTRAL_BASE_MODEL,
+    })],
     volumes={"/model-cache": modal.Volume.from_name("model-cache", create_if_missing=True)},
 )
-@modal.fastapi_endpoint(method="POST")
-def summarize_pdf_web(item: dict) -> dict:
-    import os
-    import sys
-    import traceback
-    import fitz  # PyMuPDF
-    import torch
-    import urllib.request
-    from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+class MistralSummarizer:
 
-    import io
-    # Force UTF-8 and ignore unencodable characters (like emojis) to prevent crashes
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8', errors='ignore')
-        sys.stderr.reconfigure(encoding='utf-8', errors='ignore')
-    else:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='ignore')
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='ignore')
-
-    try:
-        print("[DEBUG] Request started. Emoji-shield activated.")
-        hf_token = os.environ.get("HF_TOKEN")
-        
-        pdf_url = item.get("pdf_url")
-        pdf_path = item.get("pdf_path")
-        
-        # -- 1. Fetch PDF and Extract text --
-        try:
-            if pdf_path:
-                print(f"[DEBUG] Reading file: {pdf_path}")
-                with open(pdf_path, "rb") as f:
-                    pdf_bytes = f.read()
-            elif pdf_url:
-                print(f"[DEBUG] Downloading: {pdf_url[:50]}...")
-                req = urllib.request.Request(pdf_url, headers={'User-Agent': 'Mozilla/5.0'})
-                with urllib.request.urlopen(req) as response:
-                    pdf_bytes = response.read()
-            else:
-                return {"error": "Missing input"}
-        except Exception as e:
-            print(f"[ERROR] PDF fetch error: {str(e)}")
-            return {"error": f"PDF fetch error: {str(e)}"}
-
-        print("[DEBUG] Extracting text...")
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        full_text = "".join([page.get_text() for page in doc])
-        doc.close()
-
-        print(f"[DEBUG] Extracted {len(full_text.split())} words.")
-        if len(full_text.split()) > 3000:
-            full_text = " ".join(full_text.split()[:3000])
-
-        # -- 2. Load model using Unsloth (Matching your fine-tuning notebook approach) --
-        print("[DEBUG] Loading Base Model (Bfloat16 mode)...")
-        cache_dir = "/model-cache"
+    @modal.enter()
+    def load_model(self):
+        import torch
         from unsloth import FastLanguageModel
-        
-        # Load base model first
-        model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name=MISTRAL_BASE_MODEL,
-            max_seq_length=2048,
-            dtype=torch.bfloat16,
-            load_in_4bit=False,
-            token=hf_token,
-            cache_dir=cache_dir,
-        )
-
-        print(f"[DEBUG] Loading LoRA Adapter: {HF_MODEL_ID}")
         from peft import PeftModel
-        model = PeftModel.from_pretrained(
-            model,
-            HF_MODEL_ID,
+
+        hf_token = os.environ.get("HF_TOKEN")
+        base_model = os.environ.get("MISTRAL_BASE_MODEL")
+        adapter_id = os.environ.get("HF_MODEL_ID")
+        cache_dir = "/model-cache"
+
+        print(f"[STARTUP] Loading base model: {base_model}", flush=True)
+        self.model, self.tokenizer = FastLanguageModel.from_pretrained(
+            model_name=base_model,   # ← exact base used in notebook
+            max_seq_length=512,
+            dtype=None,
+            load_in_4bit=True,
             token=hf_token,
             cache_dir=cache_dir,
         )
+        print(f"[STARTUP] Applying LoRA adapter: {adapter_id}", flush=True)
+        self.model = PeftModel.from_pretrained(
+            self.model, adapter_id, token=hf_token, cache_dir=cache_dir
+        )
+        FastLanguageModel.for_inference(self.model)
+        print("[STARTUP] Model ready!", flush=True)
 
-        print("[DEBUG] Setting model to inference mode.")
-        FastLanguageModel.for_inference(model)
+    def _chunk_text(self, text: str, max_words: int = 400) -> list:
+        words = text.split()
+        return [" ".join(words[i:i + max_words]) for i in range(0, len(words), max_words)]
 
-        # -- 3. Build prompt --
-        prompt = f"### Human: Summarize the following document clearly and concisely. Focus on key information, locations, dates, and important points.\n\nDocument:\n{full_text}\n\n### Assistant:"
+    def _clean_summary(self, raw: str) -> str:
+        """Extract clean bullet points, remove noise and URLs."""
+        import re
+        def is_noise(line):
+            return (not line or re.search(r'https?://', line)
+                    or line.lower().startswith(("reference", "source", "more info")))
 
-        print("[DEBUG] Tokenizing prompt...")
-        inputs = tokenizer(
+        lines = raw.replace("•", "\n•").split("\n")
+        bullets, seen = [], set()
+        clean_para = []
+
+        for line in lines:
+            line = line.strip()
+            if is_noise(line):
+                continue
+            if line.startswith(("•", "-", "*")):
+                point = line.lstrip("•-* ").strip()
+                key = point[:40].lower()
+                if key not in seen and len(point) > 10:
+                    seen.add(key)
+                    bullets.append(f"• {point}")
+                    if len(bullets) == 8:
+                        break
+            else:
+                clean_para.append(line)
+
+        if bullets:
+            return "\n".join(bullets)
+        # Fallback: return cleaned paragraph (no URLs)
+        return " ".join(clean_para).strip()
+
+    def _generate(self, text: str):
+        import torch
+        import gc
+        import threading
+        from transformers import TextIteratorStreamer
+
+        # truncate the document, not the whole prompt
+        text = text[:2000]
+
+        prompt = f"""<s>[INST] Read the following document carefully and provide a concise summary.
+Rules:
+- Extract only the most important and UNIQUE points
+- Each point must be different, no repetition
+- Maximum 8 bullet points
+- Each point starts with •
+- End each point with a period
+
+Document:
+{text} [/INST]"""
+
+        inputs = self.tokenizer(
             [prompt],
             return_tensors="pt",
             truncation=True,
-            max_length=1024,
+            max_length=2048,
         ).to("cuda")
 
-        # -- 4. Generate --
-        print("[DEBUG] Generating summary with GPU...")
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=512,
-                use_cache=True,
-                do_sample=True,
-                temperature=0.3,
-                pad_token_id=tokenizer.eos_token_id,
-            )
+        streamer = TextIteratorStreamer(
+            self.tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True,
+            decode_kwargs={"errors": "replace"},
+        )
 
-        print("[DEBUG] Decoding response.")
-        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        if "### Assistant:" in response:
-            summary = response.split("### Assistant:")[-1].strip()
-        else:
-            summary = response
-        
-        print(f"[DEBUG] Summary generated. Length: {len(summary)}")
-        return {"summary": summary}
-        
-    except Exception as e:
-        error_info = traceback.format_exc()
-        print(f"[CRITICAL ERROR] Function failed during execution:\n{error_info}")
-        return {
-            "error": f"Function Execution Failed ho gya {e}",
-            "details": str(e),
-            "traceback": error_info
-        }
+        generation_kwargs = dict(
+            input_ids=inputs.input_ids,
+            attention_mask=inputs.attention_mask,
+            max_new_tokens=300,
+            use_cache=True,
+            do_sample=False,
+            repetition_penalty=1.3,
+            eos_token_id=self.tokenizer.eos_token_id,
+            pad_token_id=self.tokenizer.eos_token_id,
+            streamer=streamer,
+        )
 
-@app.function(
-    image=image,
-    gpu="T4",
-    timeout=300,
-    secrets=[modal.Secret.from_dict({"HF_TOKEN": HF_TOKEN}) if HF_TOKEN else modal.Secret.from_name("huggingface")],
-    volumes={"/model-cache": modal.Volume.from_name("model-cache", create_if_missing=True)},
-)
-def summarize_pdf_local(pdf_url: str) -> dict:
-    """Calls the web endpoint logic locally with a PDF URL (same as what the backend sends)."""
-    return summarize_pdf_web.local({"pdf_url": pdf_url})
+        thread = threading.Thread(target=self.model.generate, kwargs=generation_kwargs)
+        thread.start()
 
-# -- Local entrypoint: test with any public PDF URL -----------------
+        for token in streamer:
+            yield token
+
+    @modal.fastapi_endpoint(method="POST")
+    def summarize(self, item: dict):
+        import urllib.request
+        import fitz
+        import traceback
+        import torch
+        import json
+        from fastapi.responses import StreamingResponse
+
+        try:
+            pdf_url = item.get("pdf_url")
+            stream_response = item.get("stream", False)
+
+            # 1. Fetch PDF
+            if pdf_url:
+                print(f"[DEBUG] Downloading PDF...", flush=True)
+                req = urllib.request.Request(pdf_url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req) as r:
+                    pdf_bytes = r.read()
+            else:
+                return {"error": "Missing pdf_url"}
+
+            # 2. Extract text
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+            full_text = "".join([page.get_text() for page in doc])
+            doc.close()
+
+            print(f"[DEBUG] Extracted {len(full_text.split())} words", flush=True)
+
+            # 3. Stream or return full summary
+            if stream_response:
+                def event_generator():
+                    try:
+                        for token in self._generate(full_text):
+                            if token:
+                                yield f"data: {json.dumps({'token': token})}\n\n"
+                        yield f"data: {json.dumps({'done': True})}\n\n"
+                    except Exception as e:
+                        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+                return StreamingResponse(event_generator(), media_type="text/event-stream")
+            else:
+                tokens = []
+                for token in self._generate(full_text):
+                    tokens.append(token)
+                summary = "".join(tokens)
+                return {"summary": self._clean_summary(summary)}
+
+        except torch.cuda.CUDAError as e:
+            # Handle CUDA-specific errors
+            torch.cuda.empty_cache()
+            return {
+                "error": f"CUDA Error: {str(e)}",
+                "traceback": traceback.format_exc(),
+                "suggestion": "Try reducing input text length or check GPU memory"
+            }
+        except Exception as e:
+            return {
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }
+
+
 @app.local_entrypoint()
 def main(pdf_url: str = None):
     if not pdf_url:
-        pdf_url = os.getenv("TEST_PDF_URL", "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf")
-    print(f"Sending PDF URL to Modal GPU: {pdf_url}")
-    result = summarize_pdf_local.remote(pdf_url)
+        pdf_url = os.getenv("PDF_URL")
+    if not pdf_url:
+        print("ERROR: No PDF_URL provided. Set PDF_URL in .env or pass --pdf-url <url>")
+        return
+    print(f"Testing with: {pdf_url}")
+    import requests
+    response = requests.post(MistralSummarizer().summarize.web_url, json={"pdf_url": pdf_url}, timeout=300)
     print("\n===== SUMMARY =====")
-    print(result)
+    print(response.json())

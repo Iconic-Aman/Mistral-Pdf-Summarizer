@@ -52,34 +52,24 @@ class MistralSummarizer:
 
     @modal.enter()
     def load_model(self):
-        import torch
         from unsloth import FastLanguageModel
-        from peft import PeftModel
 
         hf_token = os.environ.get("HF_TOKEN")
-        base_model = os.environ.get("MISTRAL_BASE_MODEL")
-        adapter_id = os.environ.get("HF_MODEL_ID")
-        cache_dir = "/model-cache"
+        adapter_id = os.environ.get("HF_MODEL_ID")  
 
-        print(f"[STARTUP] Loading base model: {base_model}", flush=True)
+        print(f"[STARTUP] Loading fine-tuned model: {adapter_id}", flush=True)
+
+        # ✅ load exactly like Colab — direct fine-tuned model, no separate PeftModel
         self.model, self.tokenizer = FastLanguageModel.from_pretrained(
-            model_name=base_model,   # ← exact base used in notebook
-            max_seq_length=512,
+            model_name=adapter_id,
+            max_seq_length=2048,   # ✅ fixed from 512
             dtype=None,
             load_in_4bit=True,
             token=hf_token,
-            cache_dir=cache_dir,
-        )
-        print(f"[STARTUP] Applying LoRA adapter: {adapter_id}", flush=True)
-        self.model = PeftModel.from_pretrained(
-            self.model, adapter_id, token=hf_token, cache_dir=cache_dir
+            cache_dir="/model-cache",
         )
         FastLanguageModel.for_inference(self.model)
         print("[STARTUP] Model ready!", flush=True)
-
-    def _chunk_text(self, text: str, max_words: int = 400) -> list:
-        words = text.split()
-        return [" ".join(words[i:i + max_words]) for i in range(0, len(words), max_words)]
 
     def _clean_summary(self, raw: str) -> str:
         """Extract clean bullet points, remove noise and URLs."""
@@ -113,30 +103,43 @@ class MistralSummarizer:
         return " ".join(clean_para).strip()
 
     def _generate(self, text: str):
-        import torch
-        import gc
+
+        # ✅ chunk if long, summarize each chunk
+        chunks = []
+        chunk_size = 3000
+        for i in range(0, len(text), chunk_size - 200):
+            chunk = text[i:i + chunk_size]
+            if chunk.strip():
+                chunks.append(chunk)
+
+        # summarize each chunk, collect results
+        all_tokens = []
+        for chunk in chunks:
+            yield from self._generate_chunk(chunk)
+
+    def _generate_chunk(self, text: str):
         import threading
         from transformers import TextIteratorStreamer
 
-        # truncate the document, not the whole prompt
-        text = text[:2000]
+        text = text[:3000]  # safety cap per chunk
+        # ✅ correct — prompt content starts at column 0
+        prompt = f"""<s>[INST] Summarize the document below into bullet points.
 
-        prompt = f"""<s>[INST] Read the following document carefully and provide a concise summary.
-Rules:
-- Extract only the most important and UNIQUE points
-- Each point must be different, no repetition
-- Maximum 8 bullet points
-- Each point starts with •
-- End each point with a period
+            STRICT RULES:
+            - Only include information explicitly stated in the document
+            - Do NOT add facts or examples not mentioned in the text
+            - Maximum 8 bullet points starting with •
+            - End each point with a period
 
-Document:
-{text} [/INST]"""
+            Document:
+            {text} [/INST]
+        - """
 
         inputs = self.tokenizer(
             [prompt],
             return_tensors="pt",
             truncation=True,
-            max_length=2048,
+            max_length=2048,    # ✅ matches max_seq_length
         ).to("cuda")
 
         streamer = TextIteratorStreamer(

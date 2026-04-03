@@ -56,14 +56,16 @@ export default function HeroSection({ T, dark, user, setShowLogin }: { T: Theme;
                     </button>
                 )}
 
-                <Link href="/history">
-                    <button className="btn-outline" style={{ color: T.muted, border: `1px solid ${T.border}` }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}
-                    >
-                        VIEW HISTORY
-                    </button>
-                </Link>
+                {user && (
+                    <Link href="/history">
+                        <button className="btn-outline" style={{ color: T.muted, border: `1px solid ${T.border}` }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}
+                        >
+                            VIEW HISTORY
+                        </button>
+                    </Link>
+                )}
             </div>
 
             {/* Logged-in welcome strip */}

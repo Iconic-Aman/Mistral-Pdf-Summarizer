@@ -23,10 +23,10 @@ export default function Navbar({
             borderBottom: `1px solid ${T.border}`,
             transition: "background .35s, border-color .35s",
         }}>
-            <div style={{ fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em" }}>
+            <Link href="/" style={{ textDecoration: "none", fontFamily: "var(--font-syne), sans-serif", fontWeight: 800, fontSize: "15px", letterSpacing: ".07em" }}>
                 <span style={{ color: T.gold }}>BOTZ</span>
                 <span style={{ color: T.ink }}>CODER</span>
-            </div>
+            </Link>
 
             <div style={{ display: "flex", gap: "32px" }}>
                 {["SUMMARIZE", "HISTORY", "DOCS"].filter(l => l !== "HISTORY" || user).map(l => (

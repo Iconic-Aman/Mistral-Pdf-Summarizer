@@ -6,6 +6,7 @@ import SummaryOutput from "@/components/SummaryOutput";
 import { useAuth } from "@/lib/useAuth";
 import { useTheme } from "@/context/ThemeContext";
 import { API_BASE_URL } from "@/lib/constants";
+import Link from "next/link";
 
 // MOCK_SUMMARY removed
 
@@ -145,13 +146,12 @@ export default function SummarizePage() {
             <div style={{ padding: "80px 52px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "20px", borderBottom: `1px solid ${T.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
-                        <a href="/" style={{ display: "flex", alignItems: "center", gap: "7px", textDecoration: "none", fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".1em", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: "2px", transition: "all .2s" }}
+                        <Link href="/" style={{ display: "flex", alignItems: "center", gap: "7px", textDecoration: "none", fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".1em", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: "2px", transition: "all .2s" }}
                             onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }}
                             onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>
                             ← BACK
-                        </a>
+                        </Link>
                         <div>
-                            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.gold, letterSpacing: ".2em", marginBottom: "6px" }}>— SUMMARIZE</div>
                             <h1 style={{ fontFamily: "var(--font-syne)", fontWeight: 800, fontSize: "clamp(22px,3vw,32px)", letterSpacing: "-.02em", color: T.ink }}>Upload a PDF</h1>
                         </div>
                     </div>

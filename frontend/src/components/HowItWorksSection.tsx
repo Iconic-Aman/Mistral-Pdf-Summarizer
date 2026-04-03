@@ -4,7 +4,7 @@ import { Theme } from "@/lib/constants";
 
 export default function HowItWorksSection({ T }: { T: Theme }) {
     const steps = [
-        { n: "01", label: "Upload", body: "Drag & drop any PDF. FastAPI saves it to Cloudflare R2 and creates a job in your database with status pending." },
+        { n: "01", label: "Upload", body: "Drag & drop any PDF. FastAPI saves it to secure storage and creates a job in your database with status pending." },
         { n: "02", label: "Process", body: "Text is extracted, chunked, and each piece is sent to the Mistral 7B model on HF Spaces. A second-pass combines all chunks into one clean summary." },
         { n: "03", label: "Stream", body: "Every token the model produces is pushed immediately to your browser via SSE — the summary types itself out in real time." },
     ];

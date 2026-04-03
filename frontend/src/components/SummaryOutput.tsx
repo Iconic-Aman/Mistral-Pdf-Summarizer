@@ -86,7 +86,7 @@ export default function SummaryOutput({ T, dark, phase, streamedText, file }: Pr
 
             {phase === "idle" && (
                 <p style={{ marginTop: "12px", fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".06em", lineHeight: 1.7 }}>
-                    Mistral 7B reads your PDF in chunks and streams the summary token by token via SSE. Typical time: 2–5 min.
+                    Our AI reads your PDF and streams a concise summary in real time. Typical processing time: 1–3 minutes.
                 </p>
             )}
         </div>

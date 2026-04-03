@@ -32,6 +32,25 @@ export default function HistoryPage() {
         });
     }, [user]);
 
+    const [selectedJob, setSelectedJob] = useState<any>(null);
+    const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+    const fetchJobDetails = async (jobId: string) => {
+        if (!user) return;
+        setIsDetailLoading(true);
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}`, {
+                headers: { "Authorization": `Bearer ${user.idToken}` }
+            });
+            const data = await res.json();
+            setSelectedJob(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsDetailLoading(false);
+        }
+    };
+
     const handleLogout = () => { logout(); setShowDropdown(false); };
 
     return (
@@ -52,14 +71,16 @@ export default function HistoryPage() {
                     </div>
                 </div>
 
-                <div style={{ marginTop: "40px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px" }}>
+                <div style={{ marginTop: "40px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "24px", paddingBottom: "60px" }}>
                     {isLoading ? (
                         <div style={{ color: T.muted }}>Loading your summaries...</div>
                     ) : jobs.length === 0 ? (
                         <div style={{ color: T.muted }}>No summaries found. Upload a PDF to get started!</div>
                     ) : (jobs.map((job: any) => (
-                        <div key={job.id} style={{ padding: "24px", border: `1px solid ${T.border}`, borderRadius: "4px", background: dark ? "#1a1914" : "#fff", transition: "transform .2s", cursor: "pointer" }}
-                             onClick={() => alert(`Full summary functionality coming soon for job ${job.id}`)}>
+                        <div key={job.id} style={{ padding: "24px", border: `1px solid ${T.border}`, borderRadius: "4px", background: dark ? "#1a1914" : "#fff", transition: "all .3s", cursor: "pointer", position: "relative" }}
+                             onMouseEnter={e => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-4px)"; }}
+                             onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}
+                             onClick={() => fetchJobDetails(job.id)}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
                                 <span style={{ fontSize: "12px", fontFamily: "var(--font-space-mono)", color: job.status === "completed" ? "#10b981" : (job.status === "pending" || job.status === "processing") ? T.gold : "#ef4444" }}>
                                     ● {job.status.toUpperCase()}
@@ -71,6 +92,32 @@ export default function HistoryPage() {
                     )))}
                 </div>
             </div>
+
+            {/* Detail Modal */}
+            {(selectedJob || isDetailLoading) && (
+                <div onClick={() => setSelectedJob(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" }}>
+                    <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: "800px", maxHeight: "80vh", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "8px", display: "flex", flexDirection: "column", overflow: "hidden", animation: "modal-in .25s ease" }}>
+                        <div style={{ padding: "24px 32px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <div>
+                                <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.gold, letterSpacing: ".1em", marginBottom: "4px" }}>SUMMARY DETAIL</div>
+                                <h2 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: "20px", color: T.ink }}>{isDetailLoading ? "Loading..." : selectedJob?.job?.filename}</h2>
+                            </div>
+                            <button onClick={() => setSelectedJob(null)} style={{ background: "transparent", border: "none", cursor: "pointer", color: T.muted, fontSize: "20px" }}>✕</button>
+                        </div>
+                        <div style={{ padding: "32px", flex: 1, overflowY: "auto", color: T.ink, lineHeight: 1.8, fontSize: "15px" }}>
+                            {isDetailLoading ? (
+                                <div style={{ textAlign: "center", padding: "40px", color: T.muted }}>Fetching summary...</div>
+                            ) : selectedJob?.summary?.content ? (
+                                <p style={{ whiteSpace: "pre-wrap" }}>{selectedJob.summary.content}</p>
+                            ) : (
+                                <div style={{ textAlign: "center", padding: "40px", color: T.muted }}>
+                                    {selectedJob?.job?.status === "completed" ? "No summary available." : "Summary is still being processed."}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

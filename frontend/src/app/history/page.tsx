@@ -13,6 +13,11 @@ type Job = {
     created_at: string;
 };
 
+type JobDetail = {
+    job: Job;
+    summary: { content: string } | null;
+} | null;
+
 export default function HistoryPage() {
     const { dark, toggling, T, toggle } = useTheme();
     const [showDropdown, setShowDropdown] = useState(false);
@@ -39,7 +44,7 @@ export default function HistoryPage() {
         });
     }, [user]);
 
-    const [selectedJob, setSelectedJob] = useState<any>(null);
+    const [selectedJob, setSelectedJob] = useState<JobDetail>(null);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
 
     const fetchJobDetails = async (jobId: string) => {

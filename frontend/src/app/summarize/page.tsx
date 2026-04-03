@@ -123,9 +123,9 @@ export default function SummarizePage() {
             }
 
         } catch (err) {
-            console.error(err);
+            console.error(`Upload failed. Expected backend at: ${API_BASE_URL}`, err);
             setPhase("idle");
-            setModal({ open: true, title: "Upload Failed", body: `Make sure the backend is running at ${API_BASE_URL}` });
+            setModal({ open: true, title: "Upload Failed", body: "We're sorry, but we couldn't upload your document. Our services might be temporarily unavailable. Please try again in a few moments." });
         }
     }, [file, user]);
 
@@ -162,7 +162,7 @@ export default function SummarizePage() {
 
             {/* Split layout */}
             <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1.8fr", padding: "28px 52px 48px", marginTop: "0", gap: "0" }}>
-                <UploadZone T={T} dark={dark} file={file} phase={phase} dragging={dragging} currentChunk={currentChunk} totalChunks={TOTAL_CHUNKS} progressPct={progressPct} jobMeta={jobMeta}
+                <UploadZone T={T} dark={dark} file={file} phase={phase} dragging={dragging} progressPct={progressPct}
                     onFile={f => { setFile(f); setPhase("idle"); setStreamedText(""); setJobMeta(null); }}
                     onDragOver={() => setDragging(true)} onDragLeave={() => setDragging(false)}
                     onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f?.type === "application/pdf") { setFile(f); setPhase("idle"); } }}

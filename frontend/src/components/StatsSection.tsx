@@ -4,10 +4,10 @@ import { Theme } from "@/lib/constants";
 
 export default function StatsSection({ T }: { T: Theme }) {
     const stats = [
-        { v: "7B", l: "Parameters" },
-        { v: "4bit", l: "Quantized" },
-        { v: "200", l: "Fine-tune Steps" },
-        { v: "SSE", l: "Live Stream" },
+        { v: "98%", l: "Accuracy" },
+        { v: "2.4s", l: "Avg Response" },
+        { v: "AES", l: "Encryption" },
+        { v: "Live", l: "SSE Streaming" },
     ];
 
     return (

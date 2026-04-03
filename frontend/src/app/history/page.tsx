@@ -51,6 +51,37 @@ export default function HistoryPage() {
         }
     };
 
+    const [modal, setModal] = useState<{ open: boolean, type: 'confirm' | 'error', title: string, body: string, onConfirm?: () => void } | null>(null);
+
+    const handleDelete = async (e: React.MouseEvent, jobId: string) => {
+        e.stopPropagation();
+        if (!user) return;
+        
+        setModal({
+            open: true,
+            type: 'confirm',
+            title: 'Delete Summary?',
+            body: 'This action cannot be undone. All data for this PDF will be permanently removed.',
+            onConfirm: async () => {
+                setModal(null);
+                try {
+                    const res = await fetch(`${API_BASE_URL}/api/v1/jobs/${jobId}`, {
+                        method: 'DELETE',
+                        headers: { "Authorization": `Bearer ${user.idToken}` }
+                    });
+                    if (res.ok) {
+                        setJobs(prev => prev.filter(j => j.id !== jobId));
+                    } else {
+                        setModal({ open: true, type: 'error', title: 'Deletion Failed', body: 'We couldn\'t delete this job. Please try again later.' });
+                    }
+                } catch (err) {
+                    console.error(err);
+                    setModal({ open: true, type: 'error', title: 'Network Error', body: 'Please check your connection.' });
+                }
+            }
+        });
+    };
+
     const handleLogout = () => { logout(); setShowDropdown(false); };
 
     return (
@@ -85,13 +116,43 @@ export default function HistoryPage() {
                                 <span style={{ fontSize: "12px", fontFamily: "var(--font-space-mono)", color: job.status === "completed" ? "#10b981" : (job.status === "pending" || job.status === "processing") ? T.gold : "#ef4444" }}>
                                     ● {job.status.toUpperCase()}
                                 </span>
-                                <span style={{ fontSize: "12px", color: T.muted }}>{new Date(job.created_at).toLocaleDateString()}</span>
+                                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                    <span style={{ fontSize: "12px", color: T.muted }}>{new Date(job.created_at).toLocaleDateString()}</span>
+                                    <button onClick={(e) => handleDelete(e, job.id)} style={{ background: "transparent", border: "none", color: "#ef4444", cursor: "pointer", fontSize: "14px", padding: "4px", borderRadius: "4px", transition: "all .2s", opacity: 0.6 }}
+                                        onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                                        onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>
+                                        🗑
+                                    </button>
+                                </div>
                             </div>
                             <h3 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: "18px", marginBottom: "8px", wordBreak: "break-word" }}>{job.filename}</h3>
                         </div>
                     )))}
                 </div>
             </div>
+
+            {/* Custom Modal for Warnings/Questions */}
+            {modal?.open && (
+                <div onClick={() => setModal(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div onClick={e => e.stopPropagation()} style={{ width: "90%", maxWidth: "420px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "6px", overflow: "hidden", animation: "modal-in .2s ease" }}>
+                        <div style={{ padding: "32px 36px 0" }}>
+                            <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.gold, letterSpacing: ".1em", marginBottom: "12px" }}>NOTIFICATION</div>
+                            <h2 style={{ fontFamily: "var(--font-syne)", fontWeight: 700, fontSize: "20px", color: T.ink, marginBottom: "12px" }}>{modal.title}</h2>
+                            <p style={{ fontSize: "14px", color: T.muted, lineHeight: 1.6, fontWeight: 300 }}>{modal.body}</p>
+                        </div>
+                        <div style={{ padding: "32px 36px", display: "flex", gap: "12px", marginTop: "8px" }}>
+                            {modal.type === 'confirm' ? (
+                                <>
+                                    <button onClick={modal.onConfirm} style={{ flex: 1, padding: "12px", background: "#ef4444", color: "#fff", border: "none", borderRadius: "2px", fontFamily: "var(--font-space-mono)", fontSize: "11px", cursor: "pointer" }}>DELETE</button>
+                                    <button onClick={() => setModal(null)} style={{ flex: 1, padding: "12px", background: "transparent", color: T.muted, border: `1px solid ${T.border}`, borderRadius: "2px", fontFamily: "var(--font-space-mono)", fontSize: "11px", cursor: "pointer" }}>CANCEL</button>
+                                </>
+                            ) : (
+                                <button onClick={() => setModal(null)} style={{ flex: 1, padding: "12px", background: T.ink, color: T.bg, border: "none", borderRadius: "2px", fontFamily: "var(--font-space-mono)", fontSize: "11px", cursor: "pointer" }}>UNDERSTOOD</button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Detail Modal */}
             {(selectedJob || isDetailLoading) && (

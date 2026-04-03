@@ -69,3 +69,35 @@ async def get_job_details(
         raise HTTPException(status_code=400, detail="Invalid job ID format")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+@router.delete("/{job_id}")
+async def delete_job(
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Delete a specific job and its summary.
+    """
+    try:
+        job_uuid = uuid.UUID(job_id)
+        
+        # Verify job belongs to user
+        job_stmt = select(Job).where(Job.id == job_uuid, Job.user_id == current_user.id)
+        job_result = await db.execute(job_stmt)
+        job = job_result.scalar_one_or_none()
+        
+        if not job:
+            raise HTTPException(status_code=404, detail="Job not found")
+
+        # Delete job (summaries/chunks will cascade delete)
+        from sqlalchemy import delete
+        stmt = delete(Job).where(Job.id == job_uuid)
+        await db.execute(stmt)
+        await db.commit()
+        
+        return {"status": "success", "message": f"Job {job_id} deleted."}
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid job ID format")
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

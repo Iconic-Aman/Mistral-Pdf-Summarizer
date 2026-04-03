@@ -56,7 +56,7 @@ export default function HistoryPage() {
                         <div key={job.id} style={{ padding: "24px", border: `1px solid ${T.border}`, borderRadius: "4px", background: dark ? "#1a1914" : "#fff", transition: "transform .2s", cursor: "pointer" }}
                              onClick={() => alert(`Full summary functionality coming soon for job ${job.id}`)}>
                             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "12px" }}>
-                                <span style={{ fontSize: "12px", fontFamily: "var(--font-space-mono)", color: job.status === "done" ? "#10b981" : job.status === "processing" ? T.gold : "#ef4444" }}>
+                                <span style={{ fontSize: "12px", fontFamily: "var(--font-space-mono)", color: job.status === "completed" ? "#10b981" : (job.status === "pending" || job.status === "processing") ? T.gold : "#ef4444" }}>
                                     ● {job.status.toUpperCase()}
                                 </span>
                                 <span style={{ fontSize: "12px", color: T.muted }}>{new Date(job.created_at).toLocaleDateString()}</span>

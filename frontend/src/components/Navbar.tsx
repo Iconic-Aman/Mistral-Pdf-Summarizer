@@ -29,7 +29,7 @@ export default function Navbar({
             </div>
 
             <div style={{ display: "flex", gap: "32px" }}>
-                {["SUMMARIZE", "HISTORY", "DOCS"].map(l => (
+                {["SUMMARIZE", "HISTORY", "DOCS"].filter(l => l !== "HISTORY" || user).map(l => (
                     <Link
                         key={l}
                         href={l === "SUMMARIZE" ? "/summarize" : l === "HISTORY" ? "/history" : "#"}

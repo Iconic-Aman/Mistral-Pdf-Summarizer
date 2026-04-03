@@ -143,7 +143,7 @@ export default function HistoryPage() {
                 </div>
             </div>
 
-            {/* Custom Modal for Warnings/Questions */}
+            {/* Custom Modal for Warnings/Questions*/}
             {modal?.open && (
                 <div onClick={() => setModal(null)} style={{ position: "fixed", inset: 0, zIndex: 300, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <div onClick={e => e.stopPropagation()} style={{ width: "90%", maxWidth: "420px", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "6px", overflow: "hidden", animation: "modal-in .2s ease" }}>

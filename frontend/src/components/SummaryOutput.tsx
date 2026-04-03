@@ -71,7 +71,7 @@ export default function SummaryOutput({ T, dark, phase, streamedText, file }: Pr
                 {phase === "uploading" && (
                     <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", animation: "fadeIn .3s ease" }}>
                         <div style={{ width: "36px", height: "36px", border: `2px solid ${T.border}`, borderTopColor: T.gold, borderRadius: "50%", animation: "spin .8s linear infinite" }} />
-                        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "11px", color: T.muted, letterSpacing: ".1em" }}>UPLOADING TO R2...</div>
+                        <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "11px", color: T.muted, letterSpacing: ".1em" }}>UPLOADING DOCUMENT...</div>
                     </div>
                 )}
                 {(phase === "processing" || phase === "done") && (
@@ -86,7 +86,7 @@ export default function SummaryOutput({ T, dark, phase, streamedText, file }: Pr
 
             {phase === "idle" && (
                 <p style={{ marginTop: "12px", fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".06em", lineHeight: 1.7 }}>
-                    Mistral 7B reads your PDF in chunks and streams the summary token by token via SSE. Typical time: 2–5 min.
+                    Our AI reads your PDF and streams a concise summary in real time. Typical processing time: 1–3 minutes.
                 </p>
             )}
         </div>

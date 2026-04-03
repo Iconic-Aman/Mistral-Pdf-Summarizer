@@ -4,9 +4,9 @@ import { Theme } from "@/lib/constants";
 
 export default function FeaturesSection({ T }: { T: Theme }) {
     const features = [
-        { sym: "◈", title: "Smart PDF Parsing", body: "PyMuPDF extracts all text and splits it into intelligent 1500-token chunks — ready for the model to digest one piece at a time." },
-        { sym: "⬡", title: "Live Token Streaming", body: "Summaries appear word-by-word in real time via Server-Sent Events. No spinner, no waiting — just instant output as the model generates." },
-        { sym: "◎", title: "Full Job History", body: "Every upload persisted in PostgreSQL. Revisit any past summary, inspect chunk-level breakdowns, and track job status at a glance." },
+        { sym: "◈", title: "Smart PDF Parsing", body: "Our advanced parsing engine extracts text and intelligently segmenting it for maximum analytical accuracy." },
+        { sym: "⬡", title: "Real-time Streaming", body: "Summaries appear instantly before your eyes. Watch as the AI generates concise insights word-by-word with zero delay." },
+        { sym: "◎", title: "Private Cloud History", body: "Every interaction is persisted in your secure vault. Revisit any past summary, manage your documents, and track jobs effortlessly." },
     ];
 
     return (

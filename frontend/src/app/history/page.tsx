@@ -6,12 +6,19 @@ import { useTheme } from "@/context/ThemeContext";
 import { API_BASE_URL } from "@/lib/constants";
 import Link from "next/link";
 
+type Job = {
+    id: string;
+    filename: string;
+    status: string;
+    created_at: string;
+};
+
 export default function HistoryPage() {
     const { dark, toggling, T, toggle } = useTheme();
     const [showDropdown, setShowDropdown] = useState(false);
     const { user, logout, isLoading: isAuthLoading } = useAuth();
     
-    const [jobs, setJobs] = useState<any[]>([]);
+    const [jobs, setJobs] = useState<Job[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -107,7 +114,7 @@ export default function HistoryPage() {
                         <div style={{ color: T.muted }}>Loading your summaries...</div>
                     ) : jobs.length === 0 ? (
                         <div style={{ color: T.muted }}>No summaries found. Upload a PDF to get started!</div>
-                    ) : (jobs.map((job: any) => (
+                    ) : (jobs.map((job: Job) => (
                         <div key={job.id} style={{ padding: "24px", border: `1px solid ${T.border}`, borderRadius: "4px", background: dark ? "#1a1914" : "#fff", transition: "all .3s", cursor: "pointer", position: "relative" }}
                              onMouseEnter={e => { e.currentTarget.style.borderColor = T.gold; e.currentTarget.style.transform = "translateY(-4px)"; }}
                              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; }}

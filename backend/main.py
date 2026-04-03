@@ -13,7 +13,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 
 from backend.middleware.auth import get_current_user
 from backend.models.db_models import User
-from backend.routers import upload, summarize
+from backend.routers import upload, summarize, jobs
 
 
 app = FastAPI(
@@ -25,6 +25,7 @@ app = FastAPI(
 # Include Routers
 app.include_router(upload.router)
 app.include_router(summarize.router)
+app.include_router(jobs.router)
 
 
 

@@ -2,31 +2,27 @@
 import { useRef } from "react";
 import { Theme } from "@/lib/constants";
 
-const CHUNK_LABELS = ["Introduction & background", "Methodology & architecture", "Experimental setup", "Results & evaluation", "Conclusion & future work"];
-
 interface Props {
     T: Theme; dark: boolean;
     file: File | null;
     phase: string;
     dragging: boolean;
-    currentChunk: number;
-    totalChunks: number;
     progressPct: number;
-    jobMeta: { chunks: number; tokens: number; time: string } | null;
     onFile: (f: File) => void;
     onDragOver: () => void;
     onDragLeave: () => void;
     onDrop: (e: React.DragEvent) => void;
     onStart: () => void;
     onReset: () => void;
+    jobMeta?: { chunks: number; tokens: number; time: string } | null;
 }
 
-export default function UploadZone({ T, dark, file, phase, dragging, currentChunk, totalChunks, progressPct, jobMeta, onFile, onDragOver, onDragLeave, onDrop, onStart, onReset }: Props) {
+export default function UploadZone({ T, dark, file, phase, dragging, progressPct, onFile, onDragOver, onDragLeave, onDrop, onStart, onReset }: Props) {
     const inputRef = useRef<HTMLInputElement>(null);
     const clickable = phase === "idle";
 
     return (
-        <div style={{ paddingRight: "32px", borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="pr-0 lg:pr-8 border-r-0 lg:border-r border-solid" style={{ borderColor: T.border, display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Drop zone */}
             <div className="upload-zone" onClick={() => clickable && inputRef.current?.click()}
                 onDragOver={e => { e.preventDefault(); onDragOver(); }}
@@ -59,7 +55,7 @@ export default function UploadZone({ T, dark, file, phase, dragging, currentChun
             {phase !== "idle" && (
                 <div style={{ animation: "fadeIn .3s ease" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                        <span style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".08em" }}>{phase === "uploading" ? "UPLOADING..." : phase === "processing" ? `CHUNK ${currentChunk} / ${totalChunks}` : "COMPLETE"}</span>
+                        <span style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".08em" }}>{phase === "uploading" ? "UPLOADING..." : phase === "processing" ? "PROCESSING..." : "COMPLETE"}</span>
                         <span style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.gold }}>{progressPct}%</span>
                     </div>
                     <div style={{ height: "3px", background: T.border, borderRadius: "2px", overflow: "hidden", position: "relative" }}>
@@ -70,38 +66,9 @@ export default function UploadZone({ T, dark, file, phase, dragging, currentChun
                 </div>
             )}
 
-            {/* Chunk list */}
-            {(phase === "processing" || phase === "done") && (
-                <div style={{ animation: "fadeIn .4s ease" }}>
-                    <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "9px", color: T.muted, letterSpacing: ".14em", marginBottom: "10px" }}>CHUNKS</div>
-                    {CHUNK_LABELS.map((label, i) => {
-                        const done = i < currentChunk;
-                        const active = i === currentChunk - 1 && phase === "processing";
-                        return (
-                            <div key={i} className="chunk-row" style={{ borderBottomColor: T.border }}>
-                                <div style={{ width: "18px", height: "18px", borderRadius: "50%", flexShrink: 0, background: done ? T.gold : active ? `rgba(200,134,26,.15)` : T.border, border: `1.5px solid ${done || active ? T.gold : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", transition: "all .3s", position: "relative" }}>
-                                    {active && <div style={{ position: "absolute", inset: -4, borderRadius: "50%", border: `1px solid ${T.gold}`, animation: "pulse-ring 1.2s infinite" }} />}
-                                    {done && <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: dark ? "#111009" : "#fff" }} />}
-                                </div>
-                                <span style={{ fontFamily: "var(--font-dm-sans)", fontSize: "13px", color: done ? T.ink : T.muted, fontWeight: done ? 400 : 300, transition: "color .3s" }}>{label}</span>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
-
-            {/* Job meta */}
-            {phase === "done" && jobMeta && (
-                <div style={{ padding: "16px", background: dark ? "#1e1c17" : "#f0ede8", borderRadius: "4px", animation: "fadeIn .4s ease" }}>
-                    <div style={{ fontFamily: "var(--font-space-mono)", fontSize: "9px", color: T.muted, letterSpacing: ".14em", marginBottom: "10px" }}>JOB DETAILS</div>
-                    {([["File", file?.name], ["Chunks", jobMeta.chunks], ["Tokens", jobMeta.tokens.toLocaleString()], ["Time", jobMeta.time]] as [string, string | number | undefined][]).map(([k, v]) => (
-                        <div key={k} style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted }}>{k}</span>
-                            <span style={{ fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.ink, maxWidth: "140px", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap", textAlign: "right" }}>{v}</span>
-                        </div>
-                    ))}
-                    <button onClick={onReset} style={{ marginTop: "8px", width: "100%", padding: "9px", background: "transparent", color: T.muted, fontFamily: "var(--font-space-mono)", fontSize: "10px", letterSpacing: ".1em", border: `1px solid ${T.border}`, borderRadius: "2px", cursor: "pointer" }} onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }} onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>+ NEW SUMMARY</button>
-                </div>
+            {/* New summary button after completion */}
+            {phase === "done" && (
+                <button onClick={onReset} style={{ width: "100%", padding: "11px", background: "transparent", color: T.muted, fontFamily: "var(--font-space-mono)", fontSize: "10px", letterSpacing: ".1em", border: `1px solid ${T.border}`, borderRadius: "2px", cursor: "pointer", animation: "fadeIn .4s ease" }} onMouseEnter={e => { e.currentTarget.style.borderColor = T.ink; e.currentTarget.style.color = T.ink; }} onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.muted; }}>+ NEW SUMMARY</button>
             )}
         </div>
     );

@@ -10,7 +10,7 @@ export default function HowItWorksSection({ T }: { T: Theme }) {
     ];
 
     return (
-        <section style={{ padding: "40px 64px 100px" }}>
+        <section className="px-6 py-10 md:px-16 md:py-[100px]">
             <div style={{ marginBottom: "52px" }}>
                 <div style={{ fontFamily: "var(--font-space-mono), monospace", fontSize: "10px", color: T.muted, letterSpacing: ".22em", marginBottom: "14px" }}>
                     — PROCESS

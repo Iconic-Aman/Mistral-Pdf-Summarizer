@@ -100,7 +100,7 @@ export default function HistoryPage() {
         <div style={{ background: T.bg, color: T.ink, fontFamily: "var(--font-dm-sans), sans-serif", minHeight: "100vh", display: "flex", flexDirection: "column", transition: "background .35s,color .35s", opacity: toggling ? 0 : 1 }}>
             <Navbar T={T} dark={dark} toggle={toggle} user={user} isLoading={isAuthLoading} showDropdown={showDropdown} setShowDropdown={setShowDropdown} handleLogout={handleLogout} setShowLogin={() => { }} />
             
-            <div style={{ padding: "80px 52px 0", flex: 1 }}>
+            <div className="flex-1 pt-20 px-6 md:px-[52px]">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "20px", borderBottom: `1px solid ${T.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                         <Link href="/" style={{ display: "flex", alignItems: "center", gap: "7px", textDecoration: "none", fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".1em", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: "2px", transition: "all .2s" }}
@@ -168,7 +168,7 @@ export default function HistoryPage() {
 
             {/* Detail Modal */}
             {(selectedJob || isDetailLoading) && (
-                <div onClick={() => setSelectedJob(null)} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "40px" }}>
+                <div onClick={() => setSelectedJob(null)} className="fixed inset-0 z-[200] flex items-center justify-center p-5 md:p-10" style={{ background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)" }}>
                     <div onClick={e => e.stopPropagation()} style={{ width: "100%", maxWidth: "800px", maxHeight: "80vh", background: T.surface, border: `1px solid ${T.border}`, borderRadius: "8px", display: "flex", flexDirection: "column", overflow: "hidden", animation: "modal-in .25s ease" }}>
                         <div style={{ padding: "24px 32px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <div>

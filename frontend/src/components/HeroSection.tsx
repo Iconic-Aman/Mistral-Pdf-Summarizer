@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function HeroSection({ T, dark, user, setShowLogin }: { T: Theme; dark: boolean; user: AuthUser | null; setShowLogin: (b: boolean) => void; }) {
 
     return (
-        <section style={{ minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", padding: "120px 64px 80px" }}>
+        <section className="flex flex-col justify-center min-h-screen px-6 py-24 md:px-16 md:py-[120px]">
 
 
             <div style={{ marginBottom: "28px" }}>

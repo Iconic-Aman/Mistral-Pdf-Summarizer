@@ -28,7 +28,7 @@ export default function SummaryOutput({ T, dark, phase, streamedText, file }: Pr
     };
 
     return (
-        <div style={{ paddingLeft: "36px", display: "flex", flexDirection: "column" }}>
+        <div className="pl-0 lg:pl-9 mt-8 lg:mt-0" style={{ display: "flex", flexDirection: "column" }}>
             {/* Header */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>

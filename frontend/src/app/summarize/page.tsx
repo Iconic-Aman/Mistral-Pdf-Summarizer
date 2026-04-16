@@ -145,7 +145,7 @@ export default function SummarizePage() {
             <Navbar T={T} dark={dark} toggle={toggle} user={user} isLoading={isLoading} showDropdown={showDropdown} setShowDropdown={setShowDropdown} handleLogout={handleLogout} setShowLogin={() => { }} />
 
             {/* Page header */}
-            <div style={{ padding: "80px 52px 0" }}>
+            <div className="pt-20 px-6 md:px-[52px]">
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: "20px", borderBottom: `1px solid ${T.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
                         <Link href="/" style={{ display: "flex", alignItems: "center", gap: "7px", textDecoration: "none", fontFamily: "var(--font-space-mono)", fontSize: "10px", color: T.muted, letterSpacing: ".1em", padding: "7px 14px", border: `1px solid ${T.border}`, borderRadius: "2px", transition: "all .2s" }}
@@ -161,8 +161,8 @@ export default function SummarizePage() {
             </div>
 
             {/* Split layout */}
-            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1.8fr", padding: "28px 52px 48px", marginTop: "0", gap: "0" }}>
-                <UploadZone T={T} dark={dark} file={file} phase={phase} dragging={dragging} progressPct={progressPct}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_1.8fr] gap-8 lg:gap-0 px-6 py-8 md:px-[52px] md:py-[28px] mt-0">
+                <UploadZone T={T} dark={dark} file={file} phase={phase} dragging={dragging} progressPct={progressPct} jobMeta={jobMeta}
                     onFile={f => { setFile(f); setPhase("idle"); setStreamedText(""); setJobMeta(null); }}
                     onDragOver={() => setDragging(true)} onDragLeave={() => setDragging(false)}
                     onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f?.type === "application/pdf") { setFile(f); setPhase("idle"); } }}

@@ -123,17 +123,15 @@ class MistralSummarizer:
 
         text = text[:3000]  # safety cap per chunk
         # ✅ correct — prompt content starts at column 0
-        prompt = f"""<s>[INST] Summarize the document below into bullet points.
-
-            STRICT RULES:
-            - Only include information explicitly stated in the document
-            - Do NOT add facts or examples not mentioned in the text
+        prompt = f"""<s>[INST] Read the following document carefully and provide a concise summary.
+            Rules:
+            - Extract only the most important and UNIQUE points
             - Maximum 8 bullet points starting with •
-            - End each point with a period
+            - No hallucination, only use info from the document
 
             Document:
             {text} [/INST]
-        - """
+            • """
 
         inputs = self.tokenizer(
             [prompt],

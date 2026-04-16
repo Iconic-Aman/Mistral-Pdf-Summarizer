@@ -14,10 +14,7 @@ export default function Navbar({
 }) {
 
     return (
-        <nav style={{
-            position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-            padding: "0 52px", height: "56px",
+        <nav className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between px-5 md:px-[52px] h-[56px]" style={{
             background: T.navBg,
             backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
             borderBottom: `1px solid ${T.border}`,
@@ -28,7 +25,7 @@ export default function Navbar({
                 <span style={{ color: T.ink }}>CODER</span>
             </Link>
 
-            <div style={{ display: "flex", gap: "32px" }}>
+            <div className="hidden md:flex gap-6 lg:gap-8">
                 {["SUMMARIZE", "HISTORY", "DOCS"].filter(l => l !== "HISTORY" || user).map(l => (
                     <Link
                         key={l}

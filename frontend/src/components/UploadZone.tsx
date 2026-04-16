@@ -14,6 +14,7 @@ interface Props {
     onDrop: (e: React.DragEvent) => void;
     onStart: () => void;
     onReset: () => void;
+    jobMeta?: { chunks: number; tokens: number; time: string } | null;
 }
 
 export default function UploadZone({ T, dark, file, phase, dragging, progressPct, onFile, onDragOver, onDragLeave, onDrop, onStart, onReset }: Props) {
@@ -21,7 +22,7 @@ export default function UploadZone({ T, dark, file, phase, dragging, progressPct
     const clickable = phase === "idle";
 
     return (
-        <div style={{ paddingRight: "32px", borderRight: `1px solid ${T.border}`, display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="pr-0 lg:pr-8 border-r-0 lg:border-r border-solid" style={{ borderColor: T.border, display: "flex", flexDirection: "column", gap: "20px" }}>
             {/* Drop zone */}
             <div className="upload-zone" onClick={() => clickable && inputRef.current?.click()}
                 onDragOver={e => { e.preventDefault(); onDragOver(); }}
